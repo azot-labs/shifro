@@ -8,9 +8,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup dempeg.ts --format cjs --target node20 --dts --minify",
+    "build": "tsup dempeg.ts ./lib/cli.ts --format cjs --target node20 --dts --minify",
     "test": "vitest",
     "prepublishOnly": "npm run build"
+  },
+  "bin": {
+    "dempeg": "./lib/cli.js"
   },
   "repository": {
     "type": "git",
