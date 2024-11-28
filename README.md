@@ -2,6 +2,11 @@
 
 A lightweight, dependency-free MP4 decrypter for Node.js.
 
+## Features
+
+- **Decryption** of MP4 files with MPEG Common Encryption (CENC)
+- **Small** size (~10kB without types)
+
 ## Installation
 
 ```bash
@@ -9,8 +14,6 @@ npm install dempeg
 ```
 
 ## Usage
-
-### Default API
 
 Decrypt file:
 

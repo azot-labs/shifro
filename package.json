@@ -1,9 +1,7 @@
 {
   "name": "dempeg",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A lightweight, dependency-free MP4 decrypter for Node.js",
-  "author": "Vitaly Gashkov <vitalygashkov@vk.com>",
-  "license": "AGPL-3.0",
   "main": "./dist/dempeg.js",
   "types": "./dist/dempeg.d.ts",
   "files": [
@@ -13,6 +11,43 @@
     "build": "tsup dempeg.ts --format cjs --target node20 --dts --minify",
     "test": "vitest",
     "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vitalygashkov/dempeg.git"
+  },
+  "keywords": [
+    "mp4",
+    "mpeg",
+    "cenc",
+    "decrypt",
+    "decryption",
+    "decrypter",
+    "decryptor",
+    "dash",
+    "drm",
+    "mp4decrypt",
+    "shaka-packager"
+  ],
+  "bugs": {
+    "url": "https://github.com/vitalygashkov/dempeg/issues",
+    "email": "vitalygashkov@vk.com"
+  },
+  "author": "Vitaly Gashkov <vitalygashkov@vk.com>",
+  "license": "AGPL-3.0",
+  "readmeFilename": "README.md",
+  "funding": [
+    {
+      "type": "individual",
+      "url": "https://boosty.to/vitalygashkov"
+    },
+    {
+      "type": "patreon",
+      "url": "https://www.patreon.com/vitalygashkov"
+    }
+  ],
+  "engines": {
+    "node": "20 || 21 || 22 || 23"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
