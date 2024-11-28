@@ -1,0 +1,23 @@
+{
+  "name": "dempeg",
+  "version": "0.0.1",
+  "description": "A lightweight, dependency-free MP4 decrypter for Node.js",
+  "author": "Vitaly Gashkov <vitalygashkov@vk.com>",
+  "license": "AGPL-3.0",
+  "main": "./dist/dempeg.js",
+  "types": "./dist/dempeg.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup dempeg.ts --format cjs --target node20 --dts --minify",
+    "test": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.6"
+  }
+}

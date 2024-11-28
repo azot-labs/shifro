@@ -1,0 +1,4 @@
+/node_modules
+/dist
+*.dec.mp4
+.DS_Store
