@@ -22,7 +22,7 @@ Install library as dependency for your project:
 npm install dempeg
 ```
 
-Install globally as command-line tool:
+Install globally to use as command-line tool:
 
 ```bash
 npm install -g dempeg
