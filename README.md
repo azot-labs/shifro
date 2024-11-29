@@ -46,6 +46,7 @@ Decrypt each segment separately:
 import { decryptSegment } from 'dempeg';
 
 const segments = [
+  // List of MPEG-DASH segments
   // ...
 ];
 const results = [];
