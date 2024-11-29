@@ -68,11 +68,11 @@ Shell-like syntax:
 ```js
 import { $ } from 'dempeg';
 
-$`dempeg ./input.mp4 ./output.mp4 --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb`;
+$`dempeg --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb ./input.mp4 ./output.mp4`;
 ```
 
 ### CLI
 
 ```bash
-dempeg ./input.mp4 ./output.mp4 --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb
+dempeg --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb ./input.mp4 ./output.mp4
 ```
