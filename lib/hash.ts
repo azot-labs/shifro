@@ -1,7 +1,7 @@
-import { createHash } from 'crypto';
-import { createReadStream } from 'fs';
+import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
 
-export const getHash = (path) =>
+export const getHash = (path: string) =>
   new Promise((resolve, reject) => {
     const hash = createHash('sha256');
     const rs = createReadStream(path);
