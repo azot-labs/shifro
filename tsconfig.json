@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "moduleResolution": "NodeNext",
+    "module": "NodeNext",
+    "strict": true,
+    "baseUrl": ".",
+    "preserveWatchOutput": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["*.d.ts", "*.ts"]
+}
