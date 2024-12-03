@@ -1,6 +1,6 @@
 {
   "name": "dempeg",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A lightweight, dependency-free MP4 decrypter for Node.js",
   "main": "./dist/dempeg.js",
   "types": "./dist/dempeg.d.ts",

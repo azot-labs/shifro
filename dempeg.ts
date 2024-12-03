@@ -2,6 +2,7 @@ import { createDecipheriv } from 'node:crypto';
 import { processEncryptedSegment, type SubsampleParams } from './lib/process';
 import { processEncryptedFileStream } from './lib/stream';
 import { $ } from './lib/shell';
+import { getHash } from './lib/hash';
 
 const decryptWithKey = async (key: Buffer, params: SubsampleParams) => {
   const decipher = createDecipheriv('aes-128-ctr', key, params.iv);
@@ -37,4 +38,4 @@ const decryptFile = async (inputPath: string, outputPath: string, params: Decryp
 };
 
 export type { SubsampleParams };
-export { decryptSegment, decryptFile, $ };
+export { decryptSegment, decryptFile, $, getHash };
