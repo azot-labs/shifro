@@ -1,5 +1,5 @@
 import { createDecipheriv } from 'node:crypto';
-import { processEncryptedSegment, SubsampleParams } from './lib/process';
+import { processEncryptedSegment, type SubsampleParams } from './lib/process';
 import { processEncryptedFileStream } from './lib/stream';
 import { $ } from './lib/shell';
 
@@ -36,4 +36,5 @@ const decryptFile = async (inputPath: string, outputPath: string, params: Decryp
   return processEncryptedFileStream(inputPath, outputPath, decryptFn);
 };
 
+export type { SubsampleParams };
 export { decryptSegment, decryptFile, $ };
