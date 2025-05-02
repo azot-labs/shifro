@@ -117,6 +117,68 @@ export const parseTFHD = (reader: DataViewReader, flags: number) => {
   };
 };
 
+type ParsedTrun = {
+  sampleCount: number;
+  sampleData: {
+    sampleDuration: number | null;
+    sampleSize: number | null;
+    sampleCompositionTimeOffset: number | null;
+  }[];
+  dataOffset: number | null;
+};
+
+export const parseTRUN = (reader: DataViewReader, flags: number, version: number): ParsedTrun => {
+  const sampleCount = reader.readUint32();
+  const sampleData = [];
+  let dataOffset = null;
+
+  // "data_offset"
+  if (flags & 0x000001) {
+    dataOffset = reader.readInt32();
+  }
+
+  // Skip "first_sample_flags" if present.
+  if (flags & 0x000004) {
+    reader.skip(4);
+  }
+
+  for (let i = 0; i < sampleCount; i++) {
+    const sample: ParsedTrun['sampleData'][number] = {
+      sampleDuration: null,
+      sampleSize: null,
+      sampleCompositionTimeOffset: null,
+    };
+
+    // Read "sample duration" if present.
+    if (flags & 0x000100) {
+      sample.sampleDuration = reader.readUint32();
+    }
+
+    // Read "sample_size" if present.
+    if (flags & 0x000200) {
+      sample.sampleSize = reader.readUint32();
+    }
+
+    // Skip "sample_flags" if present.
+    if (flags & 0x000400) {
+      reader.skip(4);
+    }
+
+    // Read "sample_time_offset" if present.
+    if (flags & 0x000800) {
+      sample.sampleCompositionTimeOffset = version == 0 ? reader.readUint32() : reader.readInt32();
+    }
+
+    sampleData.push(sample);
+  }
+
+  return {
+    sampleCount,
+    sampleData,
+    dataOffset,
+  };
+};
+
 type ParsedSenc = {
   samples: {
     iv: Buffer;
