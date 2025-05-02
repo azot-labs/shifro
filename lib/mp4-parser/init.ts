@@ -1,8 +1,5 @@
+import { parsePSSH } from './box-parsers';
 import { Mp4Parser } from './parser';
-
-const ZERO_KID = '00000000000000000000000000000000';
-
-const SYSTEM_ID_WIDEVINE = 'edef8ba9-79d6-4ace-a3c8-27dcd51d21ed'.replaceAll('-', '');
 
 export interface ParsedMp4Info {
   pssh?: string;
@@ -74,44 +71,10 @@ export const readInit = async (data: Buffer) => {
     .box('stbl', Mp4Parser.children)
     .fullBox('stsd', Mp4Parser.sampleDescription)
     .fullBox('pssh', (box) => {
-      const version = box.version ?? 0;
-      if (version !== 0 && version !== 1) throw new Error('PSSH version can only be 0 or 1');
-      const systemIdBytes = box.reader.readBytes(16);
-      const systemIdHex = Buffer.from(systemIdBytes).toString('hex');
-      const systemId = [
-        systemIdHex.slice(0, 8),
-        systemIdHex.slice(8, 12),
-        systemIdHex.slice(12, 16),
-        systemIdHex.slice(16, 20),
-        systemIdHex.slice(20),
-      ].join('-');
-      info.systemId = systemId;
-
-      const dataView = box.reader.getDataView();
-      const pssh = new Uint8Array(dataView.buffer, dataView.byteOffset - 12, box.size);
-      info.pssh = Buffer.from(pssh).toString('base64');
-
-      const cencKeyIds: string[] = [];
-      if (version >= 1) {
-        const kidCount = box.reader.readUint32();
-        for (let i = 0; i < kidCount; i++) {
-          cencKeyIds.push(Buffer.from(box.reader.readBytes(16)).toString('hex'));
-        }
-      }
-
-      const dataSize = box.reader.readUint32();
-      const systemData = box.reader.readBytes(dataSize);
-      const isWidevine = systemIdHex === SYSTEM_ID_WIDEVINE;
-
-      if (isWidevine) {
-        // Extract KID from psshData (bytes 2-18)
-        const kidBytes = systemData.subarray(2, 18);
-        const kidHex = Buffer.from(kidBytes).toString('hex');
-        info.kid = kidHex;
-
-        if (info.kid !== ZERO_KID) return;
-        info.isMultiDrm = true;
-      }
+      const parsedPSSHBox = parsePSSH(box);
+      info.pssh = parsedPSSHBox.pssh;
+      info.kid = parsedPSSHBox.cencKeyIds[0];
+      info.systemId = parsedPSSHBox.systemId;
     })
     .fullBox(
       'encv',
