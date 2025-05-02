@@ -1,3 +1,4 @@
+import { Mp4Parser } from './mp4-parser/parser';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -36,25 +37,51 @@ class Mp4SegmentTransform extends Transform {
           continue;
         }
 
-        // Look for moof box to identify media segment boundary
-        const moof = findMpegBoxByName(this.buffer, root, 'moof');
-        if (!moof) {
-          break;
-        }
+        let moofStart: number | null = null;
+        let mdatEnd: number | null = null;
 
-        // Find corresponding mdat
-        const mdat = findMpegBoxByName(this.buffer, root, 'mdat');
-        if (!mdat) {
-          break;
-        }
+        await new Promise((resolve) => {
+          new Mp4Parser()
+            .box('moov', Mp4Parser.children) // Movie container
+            .box('trak', Mp4Parser.children) // Track container
+            .box('edts', Mp4Parser.children) // Edit container
+            .box('mdia', Mp4Parser.children) // Media container
+            .box('minf', Mp4Parser.children) // Media information container
+            .box('dinf', Mp4Parser.children) // Data information container
+            .box('stbl', Mp4Parser.children) // Sample table container
+            .box('mvex', Mp4Parser.children) // Movie extends container
+            .box('moof', Mp4Parser.children) // Movie fragment
+            .box('traf', Mp4Parser.children) // Track fragment
+            .box('mfra', Mp4Parser.children) // Movie fragment random access
+            .box('skip', Mp4Parser.children) // Free space
+            .box('meta', Mp4Parser.children) // Metadata container
+            .box('sinf', Mp4Parser.children) // Protection scheme information
+            .box('schi', Mp4Parser.children) // Scheme information
+            .box('envc', Mp4Parser.children) // Encrypted video container
+            .box('enva', Mp4Parser.children) // Encrypted audio container
+            .fullBox('stsd', Mp4Parser.sampleDescription) // Sample descriptions (codec types, initialization data)
+            .box('moof', (box) => {
+              // Look for moof box to identify media segment boundary
+              if (moofStart === null) moofStart = box.start;
+            })
+            .box('mdat', (box) => {
+              // Find corresponding mdat
+              if (mdatEnd !== null) return resolve(mdatEnd);
+              mdatEnd = box.start + box.size;
+              resolve(mdatEnd);
+            })
+            .parse(this.buffer, true, true);
+        });
+
+        if (moofStart === null || mdatEnd === null) break;
 
         // Process complete media segment (from moof start to mdat end)
-        const segmentBuffer = this.buffer.subarray(moof.headerStart, mdat.end);
+        const segmentBuffer = this.buffer.subarray(moofStart, mdatEnd);
 
         const processedSegment = await processEncryptedSegment(segmentBuffer, this.options.subsampleHandler);
 
         this.push(processedSegment);
-        this.buffer = this.buffer.subarray(mdat.end);
+        this.buffer = this.buffer.subarray(mdatEnd);
       }
 
       callback();
