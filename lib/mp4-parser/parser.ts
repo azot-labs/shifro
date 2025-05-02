@@ -44,22 +44,14 @@ export class Mp4Parser {
 
   parse(data: Uint8Array, partialOkay = false, stopOnPartial = false): void {
     const reader = new DataViewReader(data);
-    // console.log(reader.h || reader.getDataView());
     this.done = false;
-    // console.log('mp4parser:parse');
 
     while (reader.hasMoreData() && !this.done) {
-      // console.log({ parse: true, hasMoreData: reader.hasMoreData(), done: this.done });
       this.parseNext(0, reader, partialOkay, stopOnPartial);
     }
   }
 
-  parseNext(
-    absStart: number,
-    reader: DataViewReader,
-    partialOkay?: boolean,
-    stopOnPartial?: boolean,
-  ): void {
+  parseNext(absStart: number, reader: DataViewReader, partialOkay?: boolean, stopOnPartial?: boolean): void {
     const start = reader.getPosition();
     if (stopOnPartial && start + 8 > reader.getLength()) {
       this.done = true;
@@ -129,10 +121,7 @@ export class Mp4Parser {
 
       boxDefinition(box);
     } else {
-      const skipLength = Math.min(
-        start + size - reader.getPosition(),
-        reader.getLength() - reader.getPosition(),
-      );
+      const skipLength = Math.min(start + size - reader.getPosition(), reader.getLength() - reader.getPosition());
       reader.skip(skipLength);
     }
   }
@@ -204,12 +193,7 @@ export class Mp4Parser {
   }
 
   static typeToString(type: number): string {
-    return String.fromCharCode(
-      (type >> 24) & 0xff,
-      (type >> 16) & 0xff,
-      (type >> 8) & 0xff,
-      type & 0xff,
-    );
+    return String.fromCharCode((type >> 24) & 0xff, (type >> 16) & 0xff, (type >> 8) & 0xff, type & 0xff);
   }
 
   static headerSize(box: ParsedBox): number {

@@ -79,3 +79,74 @@ export const audioSampleEntry = (reader: DataViewReader) => {
 
   return { channelCount, sampleRate };
 };
+
+export const parseTFHD = (reader: DataViewReader, flags: number) => {
+  let defaultSampleDuration: number | null = null;
+  let defaultSampleSize: number | null = null;
+  let baseDataOffset: number | null = null;
+  let sampleDescriptionIndex: number | null = null;
+
+  const trackId = reader.readUint32(); // Read "track_ID"
+
+  // Read "base_data_offset" if present.
+  if (flags & 0x000001) {
+    baseDataOffset = reader.readUint64();
+  }
+
+  // Read "sample_description_index" if present.
+  if (flags & 0x000002) {
+    sampleDescriptionIndex = reader.readUint32();
+  }
+
+  // Read "default_sample_duration" if present.
+  if (flags & 0x000008) {
+    defaultSampleDuration = reader.readUint32();
+  }
+
+  // Read "default_sample_size" if present.
+  if (flags & 0x000010) {
+    defaultSampleSize = reader.readUint32();
+  }
+
+  return {
+    trackId,
+    defaultSampleDuration,
+    defaultSampleSize,
+    baseDataOffset,
+    sampleDescriptionIndex,
+  };
+};
+
+type ParsedSenc = {
+  samples: {
+    iv: Buffer;
+    subSamples: {
+      clearDataBytes: number;
+      encryptedDataBytes: number;
+    }[];
+  }[];
+};
+
+export const parseSENC = (reader: DataViewReader, flags: number | null): ParsedSenc => {
+  const samplesCount = reader.readUint32();
+  const hasSubSamples = flags && flags & 0x000002;
+  const ivSize = 8;
+  const samples: ParsedSenc['samples'] = [];
+  for (let i = 0; i < samplesCount; i++) {
+    const iv = Buffer.from(reader.readBytes(ivSize));
+    const sample: ParsedSenc['samples'][number] = { iv, subSamples: [] };
+    if (hasSubSamples) {
+      const subSampleCount = reader.readUint16();
+      for (let j = 0; j < subSampleCount; j++) {
+        const clearDataBytes = reader.readUint16();
+        const encryptedDataBytes = reader.readUint32();
+        sample.subSamples.push({
+          clearDataBytes,
+          encryptedDataBytes,
+        });
+      }
+    }
+    samples.push(sample);
+  }
+  return { samples };
+};
