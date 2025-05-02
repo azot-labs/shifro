@@ -117,19 +117,20 @@ export const parseTFHD = (reader: DataViewReader, flags: number) => {
   };
 };
 
+interface TrunSample {
+  duration?: number;
+  size?: number;
+  compositionTimeOffset?: number;
+}
+
 type ParsedTrun = {
-  sampleCount: number;
-  sampleData: {
-    sampleDuration: number | null;
-    sampleSize: number | null;
-    sampleCompositionTimeOffset: number | null;
-  }[];
+  samples: TrunSample[];
   dataOffset: number | null;
 };
 
 export const parseTRUN = (reader: DataViewReader, flags: number, version: number): ParsedTrun => {
   const sampleCount = reader.readUint32();
-  const sampleData = [];
+  const samples: ParsedTrun['samples'] = [];
   let dataOffset = null;
 
   // "data_offset"
@@ -143,20 +144,16 @@ export const parseTRUN = (reader: DataViewReader, flags: number, version: number
   }
 
   for (let i = 0; i < sampleCount; i++) {
-    const sample: ParsedTrun['sampleData'][number] = {
-      sampleDuration: null,
-      sampleSize: null,
-      sampleCompositionTimeOffset: null,
-    };
+    const sample: ParsedTrun['samples'][number] = {};
 
     // Read "sample duration" if present.
     if (flags & 0x000100) {
-      sample.sampleDuration = reader.readUint32();
+      sample.duration = reader.readUint32();
     }
 
     // Read "sample_size" if present.
     if (flags & 0x000200) {
-      sample.sampleSize = reader.readUint32();
+      sample.size = reader.readUint32();
     }
 
     // Skip "sample_flags" if present.
@@ -166,45 +163,53 @@ export const parseTRUN = (reader: DataViewReader, flags: number, version: number
 
     // Read "sample_time_offset" if present.
     if (flags & 0x000800) {
-      sample.sampleCompositionTimeOffset = version == 0 ? reader.readUint32() : reader.readInt32();
+      sample.compositionTimeOffset = version == 0 ? reader.readUint32() : reader.readInt32();
     }
 
-    sampleData.push(sample);
+    samples.push(sample);
   }
 
   return {
-    sampleCount,
-    sampleData,
+    samples,
     dataOffset,
   };
 };
 
+interface SencSubsample {
+  bytesOfClearData: number;
+  bytesOfEncryptedData: number;
+}
+
+interface SencSample {
+  iv: Buffer;
+  subsamples: SencSubsample[];
+}
+
 type ParsedSenc = {
-  samples: {
-    iv: Buffer;
-    subSamples: {
-      clearDataBytes: number;
-      encryptedDataBytes: number;
-    }[];
-  }[];
+  samples: SencSample[];
 };
 
 export const parseSENC = (reader: DataViewReader, flags: number | null): ParsedSenc => {
-  const samplesCount = reader.readUint32();
-  const hasSubSamples = flags && flags & 0x000002;
-  const ivSize = 8;
+  if (flags && flags & 1) {
+    const algorithmId = reader.readUint8(); // TODO: uint24
+    const ivSize = reader.readUint8();
+    const kid = reader.readBytes(16);
+  }
+  const sampleCount = reader.readUint32();
   const samples: ParsedSenc['samples'] = [];
-  for (let i = 0; i < samplesCount; i++) {
+  for (let i = 0; i < sampleCount; i++) {
+    const ivSize = 8;
     const iv = Buffer.from(reader.readBytes(ivSize));
-    const sample: ParsedSenc['samples'][number] = { iv, subSamples: [] };
-    if (hasSubSamples) {
-      const subSampleCount = reader.readUint16();
-      for (let j = 0; j < subSampleCount; j++) {
-        const clearDataBytes = reader.readUint16();
-        const encryptedDataBytes = reader.readUint32();
-        sample.subSamples.push({
-          clearDataBytes,
-          encryptedDataBytes,
+    const sample: ParsedSenc['samples'][number] = { iv, subsamples: [] };
+    const hasSubsamples = flags && flags & 2;
+    if (hasSubsamples) {
+      const subsampleCount = reader.readUint16();
+      for (let j = 0; j < subsampleCount; j++) {
+        const bytesOfClearData = reader.readUint16();
+        const bytesOfEncryptedData = reader.readUint32();
+        sample.subsamples.push({
+          bytesOfClearData,
+          bytesOfEncryptedData,
         });
       }
     }
