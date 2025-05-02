@@ -1,6 +1,6 @@
 import { getDefaultKid } from './kid';
 import { getEncryptionScheme } from './scheme';
-import { getPsshList } from './pssh';
+import { getPsshList } from './pssh-list';
 
 export const getInfo = async (data: Uint8Array) => {
   const kid = await getDefaultKid(data);

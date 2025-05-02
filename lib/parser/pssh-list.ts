@@ -1,7 +1,7 @@
-import { parsePSSH } from './box-parsers';
-import { Mp4Parser } from './parser';
+import { Mp4Parser } from '../core/parser';
+import { parsePsshBox } from '../box/pssh';
 
-type PsshInfo = ReturnType<typeof parsePSSH>;
+type PsshInfo = ReturnType<typeof parsePsshBox>;
 
 export const getPsshList = async (data: Uint8Array) => {
   return new Promise<PsshInfo[]>((resolve) => {
@@ -13,7 +13,7 @@ export const getPsshList = async (data: Uint8Array) => {
       .box('minf', Mp4Parser.children)
       .box('stbl', Mp4Parser.children)
       .fullBox('stsd', Mp4Parser.sampleDescription)
-      .fullBox('pssh', (box) => results.push(parsePSSH(box)))
+      .fullBox('pssh', (box) => results.push(parsePsshBox(box)))
       .parse(data, false, true);
     resolve(results);
   });

@@ -1,5 +1,5 @@
-import { parseTENC } from './box-parsers';
-import { Mp4Parser } from './parser';
+import { Mp4Parser } from '../core/parser';
+import { parseTencBox } from '../box/tenc';
 
 export const getDefaultKid = (data: Uint8Array) => {
   return new Promise<string>((resolve) => {
@@ -15,7 +15,7 @@ export const getDefaultKid = (data: Uint8Array) => {
       .box('sinf', Mp4Parser.children)
       .box('schi', Mp4Parser.children)
       .fullBox('tenc', (box) => {
-        const { defaultKID } = parseTENC(box.reader);
+        const { defaultKID } = parseTencBox(box.reader);
         resolve(defaultKID);
       })
       .parse(data, true);

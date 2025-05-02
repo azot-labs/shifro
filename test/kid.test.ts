@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
-import { getDefaultKid } from '../lib/mp4-parser/kid';
-import { readFirstNBytes } from '../lib/mp4-parser/utils';
+import { readFirstNBytes } from '../lib/utils';
+import { getDefaultKid } from '../lib/parser/kid';
 
 test('parsing default kid from encrypted mp4', async () => {
   const input = './test/bitmovin.enc.mp4';

@@ -1,4 +1,4 @@
-import { Mp4Parser } from './parser';
+import { Mp4Parser } from '../core/parser';
 
 export const getEncryptionScheme = (data: Uint8Array) => {
   return new Promise<string>((resolve) => {

@@ -1,7 +1,9 @@
-import { ParsedSenc, ParsedTfhd, ParsedTrun, parseSENC, parseTFHD, parseTRUN } from './mp4-parser/box-parsers';
+import { Mp4Parser } from './core/parser';
+import { parseSencBox, type ParsedSenc } from './box/senc';
+import { parseTrunBox, type ParsedTrun } from './box/trun';
+import { parseTfhdBox, type ParsedTfhd } from './box/tfhd';
 import { decryptInitChunk, isInitializationSegment } from './initialization';
 import { parseMpegBoxes, replaceBoxName } from './box';
-import { Mp4Parser } from './mp4-parser/parser';
 
 export type EncryptionScheme = 'cenc' | 'cbcs';
 
@@ -46,13 +48,13 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
     .box('enva', Mp4Parser.children) // Encrypted audio container
     .fullBox('stsd', Mp4Parser.sampleDescription) // Sample descriptions (codec types, initialization data)
     .fullBox('senc', (box) => {
-      sencInfo = parseSENC(box.reader, box.flags);
+      sencInfo = parseSencBox(box.reader, box.flags);
     })
     .fullBox('trun', (box) => {
-      trunInfo = parseTRUN(box.reader, box.flags!, box.version!);
+      trunInfo = parseTrunBox(box.reader, box.flags!, box.version!);
     })
     .fullBox('tfhd', (box) => {
-      tfhdInfo = parseTFHD(box.reader, box.flags!);
+      tfhdInfo = parseTfhdBox(box.reader, box.flags!);
     })
     .parse(segment, true, true);
 

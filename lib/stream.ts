@@ -1,7 +1,7 @@
-import { Mp4Parser } from './mp4-parser/parser';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { Mp4Parser } from './core/parser';
 import { processEncryptedSegment, SubsampleHandler } from './process';
 import { parseMpegBoxes, findMpegBoxByName } from './box';
 
