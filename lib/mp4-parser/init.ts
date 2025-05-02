@@ -9,7 +9,7 @@ export interface ParsedMp4Info {
   isMultiDrm?: boolean;
 }
 
-function readBox(data: Uint8Array, info: ParsedMp4Info): void {
+export function readBox(data: Uint8Array, info: ParsedMp4Info): void {
   // Find 'schm' box
   const schmBytes = new Uint8Array([0x73, 0x63, 0x68, 0x6d]);
   let schmIndex = -1;
