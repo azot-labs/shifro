@@ -1,16 +1,10 @@
-import fs from 'fs';
-import { readInit } from './init';
+import { getDefaultKid } from './kid';
+import { getEncryptionScheme } from './scheme';
+import { getPsshList } from './pssh';
 
-export async function readFirstNBytes(path: fs.PathLike, n: number = 1 * 1024 * 1024): Promise<Buffer> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of fs.createReadStream(path, { start: 0, end: n - 1 })) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks);
-}
-
-export const getMp4Info = async (filepath: string) => {
-  const data = await readFirstNBytes(filepath, 1 * 1024 * 1024); // 1MB
-  const info = await readInit(data);
-  return info;
+export const getInfo = async (data: Uint8Array) => {
+  const kid = await getDefaultKid(data);
+  const scheme = await getEncryptionScheme(data);
+  const psshList = await getPsshList(data);
+  return { kid, scheme, psshList };
 };

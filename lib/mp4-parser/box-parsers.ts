@@ -20,11 +20,11 @@ export const parsePSSH = (box: ParsedBox) => {
   const pssh = new Uint8Array(dataView.buffer, dataView.byteOffset - 12, box.size);
   const psshBase64 = Buffer.from(pssh).toString('base64');
 
-  const cencKeyIds: string[] = [];
+  const keyIds: string[] = [];
   if (version >= 1) {
     const kidCount = box.reader.readUint32();
     for (let i = 0; i < kidCount; i++) {
-      cencKeyIds.push(Buffer.from(box.reader.readBytes(16)).toString('hex'));
+      keyIds.push(Buffer.from(box.reader.readBytes(16)).toString('hex'));
     }
   }
 
@@ -36,7 +36,7 @@ export const parsePSSH = (box: ParsedBox) => {
     // Need to use Protobuf to parse Widevine PSSH
   }
 
-  return { version, systemId: systemIdUuid, pssh: psshBase64, cencKeyIds, systemData };
+  return { version, systemId: systemIdUuid, pssh: psshBase64, keyIds, systemData };
 };
 
 // Track Encryption Box (TENC)

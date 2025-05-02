@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
-import { readFirstNBytes } from '../lib/mp4-parser/info';
 import { getPsshList } from '../lib/mp4-parser/pssh';
+import { readFirstNBytes } from '../lib/mp4-parser/utils';
 
 test('parsing pssh from encrypted mp4', async () => {
   const input = './test/bitmovin.enc.mp4';
