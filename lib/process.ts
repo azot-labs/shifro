@@ -3,7 +3,6 @@ import { parseSencBox, type ParsedSenc } from './box/senc';
 import { parseTrunBox, type ParsedTrun } from './box/trun';
 import { parseTfhdBox, type ParsedTfhd } from './box/tfhd';
 import { decryptInitChunk, isInitializationSegment } from './initialization';
-import { parseMpegBoxes, replaceBoxName } from './box';
 
 export type EncryptionScheme = 'cenc' | 'cbcs';
 
@@ -22,39 +21,22 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
   const isInit = isInitializationSegment(segment);
   if (isInit) return decryptInitChunk(segment);
 
-  const root = parseMpegBoxes(segment);
-
   let sencInfo!: ParsedSenc;
   let trunInfo!: ParsedTrun;
   let tfhdInfo!: ParsedTfhd;
   let mdatOffset!: number;
+
   new Mp4Parser()
-    .box('moov', Mp4Parser.children) // Movie container
-    .box('trak', Mp4Parser.children) // Track container
-    .box('edts', Mp4Parser.children) // Edit container
-    .box('mdia', Mp4Parser.children) // Media container
-    .box('minf', Mp4Parser.children) // Media information container
-    .box('dinf', Mp4Parser.children) // Data information container
-    .box('stbl', Mp4Parser.children) // Sample table container
-    .box('mvex', Mp4Parser.children) // Movie extends container
-    .box('moof', Mp4Parser.children) // Movie fragment
-    .box('traf', Mp4Parser.children) // Track fragment
-    .box('mfra', Mp4Parser.children) // Movie fragment random access
-    .box('skip', Mp4Parser.children) // Free space
-    .box('meta', Mp4Parser.children) // Metadata container
-    .box('sinf', Mp4Parser.children) // Protection scheme information
-    .box('schi', Mp4Parser.children) // Scheme information
-    .box('envc', Mp4Parser.children) // Encrypted video container
-    .box('enva', Mp4Parser.children) // Encrypted audio container
-    .fullBox('stsd', Mp4Parser.sampleDescription) // Sample descriptions (codec types, initialization data)
-    .fullBox('senc', (box) => {
-      sencInfo = parseSencBox(box.reader, box.flags);
+    .box('moof', Mp4Parser.children)
+    .box('traf', Mp4Parser.children)
+    .fullBox('tfhd', (box) => {
+      tfhdInfo = parseTfhdBox(box.reader, box.flags!);
     })
     .fullBox('trun', (box) => {
       trunInfo = parseTrunBox(box.reader, box.flags!, box.version!);
     })
-    .fullBox('tfhd', (box) => {
-      tfhdInfo = parseTfhdBox(box.reader, box.flags!);
+    .fullBox('senc', (box) => {
+      sencInfo = parseSencBox(box.reader, box.flags);
     })
     .parse(segment, true, true);
 
@@ -67,26 +49,26 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
   let position = 0;
   let time = 0;
   for (let i = 0; i < sencInfo.samples.length; i++) {
-    const sencSampleNew = sencInfo.samples[i];
+    const sencSample = sencInfo.samples[i];
     const trunSample = trunInfo.samples[i];
     const expectedSize = trunInfo.samples[i].size || tfhdInfo.defaultSampleSize || 0;
 
     // If no subsamples defined, treat entire sample as encrypted
-    if (!sencSampleNew.subsamples.length) {
-      sencSampleNew.subsamples.push({
+    if (!sencSample.subsamples.length) {
+      sencSample.subsamples.push({
         bytesOfClearData: 0,
         bytesOfEncryptedData: expectedSize,
       });
     }
 
     // Check if any subsample has encrypted data
-    const hasEncrypted = sencSampleNew.subsamples.some((subsample) => subsample.bytesOfEncryptedData > 0);
+    const hasEncrypted = sencSample.subsamples.some((subsample) => subsample.bytesOfEncryptedData > 0);
 
     if (hasEncrypted) {
       let offset = 0;
       // First collect all encrypted parts
       const encryptedParts: Buffer[] = [];
-      for (const subsample of sencSampleNew.subsamples) {
+      for (const subsample of sencSample.subsamples) {
         offset += subsample.bytesOfClearData;
         if (subsample.bytesOfEncryptedData > 0) {
           const encryptedData = segment.subarray(
@@ -102,7 +84,7 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
       const encryptedData = Buffer.concat(encryptedParts);
       const subsampleParams: SubsampleParams = {
         encryptionScheme: 'cenc',
-        iv: sencSampleNew.iv,
+        iv: sencSample.iv,
         data: encryptedData,
         timestamp: time,
       };
@@ -114,7 +96,7 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
         let decryptedOffset = 0;
         const decryptedSampleParts: Buffer[] = [];
 
-        for (const subsample of sencSampleNew.subsamples) {
+        for (const subsample of sencSample.subsamples) {
           if (subsample.bytesOfClearData > 0) {
             const clearData = segment.subarray(
               mdatOffset + position + offset,
@@ -144,7 +126,15 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
     time += trunSample.duration || tfhdInfo.defaultSampleDuration || 0;
   }
 
-  replaceBoxName(segment, root, 'senc', 'skip');
+  new Mp4Parser()
+    .box('moof', Mp4Parser.children)
+    .box('traf', Mp4Parser.children)
+    .box('senc', (box) => {
+      const newName = 'skip';
+      const offset = box.start + newName.length;
+      segment.write(newName, offset);
+    })
+    .parse(segment, true, true);
 
   return segment;
 };
