@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
-import { getEncryptionScheme, readFirstNBytes } from '../lib/mp4-parser/info';
+import { readFirstNBytes } from '../lib/mp4-parser/info';
+import { getEncryptionScheme } from '../lib/mp4-parser/scheme';
 
 test('parsing encryption scheme from encrypted mp4', async () => {
   const input = './test/bitmovin.enc.mp4';
