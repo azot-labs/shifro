@@ -80,11 +80,13 @@ export const audioSampleEntry = (reader: DataViewReader) => {
   return { channelCount, sampleRate };
 };
 
+export type ParsedTfhd = ReturnType<typeof parseTFHD>;
+
 export const parseTFHD = (reader: DataViewReader, flags: number) => {
-  let defaultSampleDuration: number | null = null;
-  let defaultSampleSize: number | null = null;
-  let baseDataOffset: number | null = null;
-  let sampleDescriptionIndex: number | null = null;
+  let defaultSampleDuration: number | undefined;
+  let defaultSampleSize: number | undefined;
+  let baseDataOffset: number | undefined;
+  let sampleDescriptionIndex: number | undefined;
 
   const trackId = reader.readUint32(); // Read "track_ID"
 
@@ -117,16 +119,16 @@ export const parseTFHD = (reader: DataViewReader, flags: number) => {
   };
 };
 
-interface TrunSample {
+export interface TrunSample {
   duration?: number;
   size?: number;
   compositionTimeOffset?: number;
 }
 
-type ParsedTrun = {
+export interface ParsedTrun {
   samples: TrunSample[];
   dataOffset: number | null;
-};
+}
 
 export const parseTRUN = (reader: DataViewReader, flags: number, version: number): ParsedTrun => {
   const sampleCount = reader.readUint32();
@@ -175,19 +177,19 @@ export const parseTRUN = (reader: DataViewReader, flags: number, version: number
   };
 };
 
-interface SencSubsample {
+export interface SencSubsample {
   bytesOfClearData: number;
   bytesOfEncryptedData: number;
 }
 
-interface SencSample {
+export interface SencSample {
   iv: Buffer;
   subsamples: SencSubsample[];
 }
 
-type ParsedSenc = {
+export interface ParsedSenc {
   samples: SencSample[];
-};
+}
 
 export const parseSENC = (reader: DataViewReader, flags: number | null): ParsedSenc => {
   if (flags && flags & 1) {
@@ -199,7 +201,8 @@ export const parseSENC = (reader: DataViewReader, flags: number | null): ParsedS
   const samples: ParsedSenc['samples'] = [];
   for (let i = 0; i < sampleCount; i++) {
     const ivSize = 8;
-    const iv = Buffer.from(reader.readBytes(ivSize));
+    const iv = Buffer.alloc(16);
+    iv.set(reader.readBytes(ivSize));
     const sample: ParsedSenc['samples'][number] = { iv, subsamples: [] };
     const hasSubsamples = flags && flags & 2;
     if (hasSubsamples) {
