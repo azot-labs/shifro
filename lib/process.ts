@@ -1,5 +1,7 @@
+import { ParsedSenc, ParsedTfhd, ParsedTrun, parseSENC, parseTFHD, parseTRUN } from './mp4-parser/box-parsers';
 import { decryptInitChunk, isInitializationSegment } from './initialization';
-import { findMpegBoxByName, parseMpegBoxes, replaceBoxName, tryParseSenc, tryParseTfhd, tryParseTrun } from './box';
+import { parseMpegBoxes, replaceBoxName } from './box';
+import { Mp4Parser } from './mp4-parser/parser';
 
 export type EncryptionScheme = 'cenc' | 'cbcs';
 
@@ -19,78 +21,86 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
   if (isInit) return decryptInitChunk(segment);
 
   const root = parseMpegBoxes(segment);
-  const senc = findMpegBoxByName(segment, root, 'senc');
-  const trun = findMpegBoxByName(segment, root, 'trun');
-  const tfhd = findMpegBoxByName(segment, root, 'tfhd');
-  const mdat = findMpegBoxByName(segment, root, 'mdat');
 
-  if (!senc) throw new Error("Couldn't find senc box");
-  if (!trun) throw new Error("Couldn't find trun box");
-  if (!tfhd) throw new Error("Couldn't find tfhd box");
-  if (!mdat) throw new Error("Couldn't find mdat box");
+  let sencInfo!: ParsedSenc;
+  let trunInfo!: ParsedTrun;
+  let tfhdInfo!: ParsedTfhd;
+  let mdatOffset!: number;
+  new Mp4Parser()
+    .box('moov', Mp4Parser.children) // Movie container
+    .box('trak', Mp4Parser.children) // Track container
+    .box('edts', Mp4Parser.children) // Edit container
+    .box('mdia', Mp4Parser.children) // Media container
+    .box('minf', Mp4Parser.children) // Media information container
+    .box('dinf', Mp4Parser.children) // Data information container
+    .box('stbl', Mp4Parser.children) // Sample table container
+    .box('mvex', Mp4Parser.children) // Movie extends container
+    .box('moof', Mp4Parser.children) // Movie fragment
+    .box('traf', Mp4Parser.children) // Track fragment
+    .box('mfra', Mp4Parser.children) // Movie fragment random access
+    .box('skip', Mp4Parser.children) // Free space
+    .box('meta', Mp4Parser.children) // Metadata container
+    .box('sinf', Mp4Parser.children) // Protection scheme information
+    .box('schi', Mp4Parser.children) // Scheme information
+    .box('envc', Mp4Parser.children) // Encrypted video container
+    .box('enva', Mp4Parser.children) // Encrypted audio container
+    .fullBox('stsd', Mp4Parser.sampleDescription) // Sample descriptions (codec types, initialization data)
+    .fullBox('senc', (box) => {
+      sencInfo = parseSENC(box.reader, box.flags);
+    })
+    .fullBox('trun', (box) => {
+      trunInfo = parseTRUN(box.reader, box.flags!, box.version!);
+    })
+    .fullBox('tfhd', (box) => {
+      tfhdInfo = parseTFHD(box.reader, box.flags!);
+    })
+    .parse(segment, true, true);
 
-  const mdatOffset = mdat.payloadStart;
+  mdatOffset = trunInfo.dataOffset!;
 
-  let sencSamples = tryParseSenc(segment, senc);
-  if (sencSamples === null) {
-    sencSamples = tryParseSenc(segment, senc, 16);
-  }
-  if (sencSamples === null) {
-    throw new Error('failed to parse senc box');
-  }
-
-  const trunSamples = tryParseTrun(segment, trun);
-  if (trunSamples === null) {
-    throw new Error('failed to parse trun box');
-  }
-  if (sencSamples.length !== trunSamples.length) {
-    throw new Error(`sample count mismatch: trun has ${trunSamples.length}, senc has ${sencSamples.length}`);
-  }
-
-  const header = tryParseTfhd(segment, tfhd);
-  if (header === null) {
-    throw new Error('failed to parse tfhd box');
+  if (sencInfo.samples.length !== trunInfo.samples.length) {
+    throw new Error(`sample count mismatch: trun has ${trunInfo.samples.length}, senc has ${sencInfo.samples.length}`);
   }
 
   let position = 0;
   let time = 0;
-  for (let i = 0; i < sencSamples.length; i++) {
-    const sencSample = sencSamples[i];
-    const trunSample = trunSamples[i];
-    const expectedSize = trunSamples[i].size || header.defaultSize || 0;
+  for (let i = 0; i < sencInfo.samples.length; i++) {
+    const sencSampleNew = sencInfo.samples[i];
+    const trunSample = trunInfo.samples[i];
+    const expectedSize = trunInfo.samples[i].size || tfhdInfo.defaultSampleSize || 0;
 
     // If no subsamples defined, treat entire sample as encrypted
-    if (!sencSample.subSamples.length) {
-      sencSample.subSamples.push({
-        clearDataBytes: 0,
-        encryptedDataBytes: expectedSize,
+    if (!sencSampleNew.subsamples.length) {
+      sencSampleNew.subsamples.push({
+        bytesOfClearData: 0,
+        bytesOfEncryptedData: expectedSize,
       });
     }
 
     // Check if any subsample has encrypted data
-    const hasEncrypted = sencSample.subSamples.some((subsample: any) => subsample.encryptedDataBytes > 0);
+    const hasEncrypted = sencSampleNew.subsamples.some((subsample) => subsample.bytesOfEncryptedData > 0);
 
     if (hasEncrypted) {
       let offset = 0;
       // First collect all encrypted parts
       const encryptedParts: Buffer[] = [];
-      for (const subSample of sencSample.subSamples) {
-        offset += subSample.clearDataBytes;
-        if (subSample.encryptedDataBytes > 0) {
+      for (const subsample of sencSampleNew.subsamples) {
+        offset += subsample.bytesOfClearData;
+        if (subsample.bytesOfEncryptedData > 0) {
           const encryptedData = segment.subarray(
             mdatOffset + position + offset,
-            mdatOffset + position + offset + subSample.encryptedDataBytes
+            mdatOffset + position + offset + subsample.bytesOfEncryptedData
           );
           encryptedParts.push(encryptedData);
         }
-        offset += subSample.encryptedDataBytes;
+        offset += subsample.bytesOfEncryptedData;
       }
 
       // Decrypt all encrypted parts at once
       const encryptedData = Buffer.concat(encryptedParts);
       const subsampleParams: SubsampleParams = {
         encryptionScheme: 'cenc',
-        iv: sencSample.iv,
+        iv: sencSampleNew.iv,
         data: encryptedData,
         timestamp: time,
       };
@@ -102,24 +112,24 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
         let decryptedOffset = 0;
         const decryptedSampleParts: Buffer[] = [];
 
-        for (const subSample of sencSample.subSamples) {
-          if (subSample.clearDataBytes > 0) {
+        for (const subsample of sencSampleNew.subsamples) {
+          if (subsample.bytesOfClearData > 0) {
             const clearData = segment.subarray(
               mdatOffset + position + offset,
-              mdatOffset + position + offset + subSample.clearDataBytes
+              mdatOffset + position + offset + subsample.bytesOfClearData
             );
             decryptedSampleParts.push(clearData);
-            offset += subSample.clearDataBytes;
+            offset += subsample.bytesOfClearData;
           }
 
-          if (subSample.encryptedDataBytes > 0) {
+          if (subsample.bytesOfEncryptedData > 0) {
             const decryptedPart = decryptedData.subarray(
               decryptedOffset,
-              decryptedOffset + subSample.encryptedDataBytes
+              decryptedOffset + subsample.bytesOfEncryptedData
             );
             decryptedSampleParts.push(decryptedPart);
-            decryptedOffset += subSample.encryptedDataBytes;
-            offset += subSample.encryptedDataBytes;
+            decryptedOffset += subsample.bytesOfEncryptedData;
+            offset += subsample.bytesOfEncryptedData;
           }
         }
 
@@ -129,7 +139,7 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
     }
 
     position += expectedSize;
-    time += trunSample.duration || header.defaultDuration || 0;
+    time += trunSample.duration || tfhdInfo.defaultSampleDuration || 0;
   }
 
   replaceBoxName(segment, root, 'senc', 'skip');
