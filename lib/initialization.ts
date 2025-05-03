@@ -1,4 +1,3 @@
-import { findMpegBoxByName, MpegBox, parseMpegBoxes } from './box';
 import { bufferReplaceAll } from './buffer';
 import { Mp4Parser } from './core/parser';
 
@@ -58,12 +57,18 @@ const AUDIO_CODECS = [
 
 export const isInitializationSegment = (chunk: Buffer): boolean => {
   try {
-    const root = parseMpegBoxes(chunk);
-    // debugPrintBoxStructure(root);
-    // Init segments typically contain 'moov' box
-    const hasMoov = findMpegBoxByName(chunk, root, 'moov') !== null;
-    // Media segments typically contain 'moof' box
-    const hasMoof = findMpegBoxByName(chunk, root, 'moof') !== null;
+    let hasMoov = false;
+    let hasMoof = false;
+    new Mp4Parser()
+      .box('moov', () => {
+        // Init segments typically contain 'moov' box
+        hasMoov = true;
+      })
+      .box('moof', () => {
+        // Media segments typically contain 'moof' box
+        hasMoof = true;
+      })
+      .parse(chunk, true, true);
     // If it has 'moov' and doesn't have 'moof', it's likely an init segment
     return hasMoov && !hasMoof;
   } catch (e) {
@@ -72,7 +77,7 @@ export const isInitializationSegment = (chunk: Buffer): boolean => {
   }
 };
 
-const getOriginalCodec = (chunk: Buffer, root: MpegBox): string | null => {
+const getOriginalCodec = (chunk: Buffer): string | null => {
   let format: string | null = null;
   new Mp4Parser()
     .box('moov', Mp4Parser.children)
@@ -93,10 +98,8 @@ const getOriginalCodec = (chunk: Buffer, root: MpegBox): string | null => {
 };
 
 export const decryptInitChunk = async (chunk: Buffer) => {
-  const root = parseMpegBoxes(chunk);
-
   // Get original codec from encryption metadata
-  const originalCodec = getOriginalCodec(chunk, root);
+  const originalCodec = getOriginalCodec(chunk);
 
   // Replace encryption-related boxes with 'skip'
   bufferReplaceAll(chunk, 'sinf', 'skip');
