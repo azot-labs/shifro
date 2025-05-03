@@ -7,7 +7,7 @@ import { decryptInitChunk, isInitializationSegment } from './initialization';
 export type EncryptionScheme = 'cenc' | 'cbcs';
 
 export type SubsampleParams = {
-  encryptionScheme: EncryptionScheme;
+  encryptionScheme?: EncryptionScheme;
   data: Buffer;
   // Initialization Vector (IV) of sample
   iv: Buffer;
@@ -83,7 +83,6 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
       // Decrypt all encrypted parts at once
       const encryptedData = Buffer.concat(encryptedParts);
       const subsampleParams: SubsampleParams = {
-        encryptionScheme: 'cenc',
         iv: sencSample.iv,
         data: encryptedData,
         timestamp: time,

@@ -2,11 +2,14 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { Mp4Parser } from './core/parser';
-import { processEncryptedSegment, SubsampleHandler } from './process';
+import { getEncryptionScheme } from './parser/scheme';
+import { EncryptionScheme, processEncryptedSegment, SubsampleHandler, SubsampleParams } from './process';
+import { isInitializationSegment, decryptInitChunk } from './initialization';
 
 class Mp4SegmentTransform extends Transform {
   private buffer: Buffer = Buffer.alloc(0);
   private isProcessingInit = true;
+  private scheme: string | null = null;
 
   constructor(private options: { subsampleHandler: SubsampleHandler }) {
     super();
@@ -32,12 +35,15 @@ class Mp4SegmentTransform extends Transform {
 
           // Process initialization segment
           const initSegment = this.buffer.subarray(0, moovEnd);
-          const processedInit = await processEncryptedSegment(initSegment, this.options.subsampleHandler);
-
-          this.push(processedInit);
-          this.buffer = this.buffer.subarray(moovEnd);
-          this.isProcessingInit = false;
-          continue;
+          this.scheme = await getEncryptionScheme(initSegment);
+          const isInit = isInitializationSegment(initSegment);
+          if (isInit) {
+            const processedInit = await decryptInitChunk(initSegment);
+            this.push(processedInit);
+            this.buffer = this.buffer.subarray(moovEnd);
+            this.isProcessingInit = false;
+            continue;
+          }
         }
 
         let moofStart: number | null = null;
@@ -60,7 +66,12 @@ class Mp4SegmentTransform extends Transform {
         // Process complete media segment (from moof start to mdat end)
         const segmentBuffer = this.buffer.subarray(moofStart, mdatEnd);
 
-        const processedSegment = await processEncryptedSegment(segmentBuffer, this.options.subsampleHandler);
+        const onSubsampleData = (params: SubsampleParams) => {
+          params.encryptionScheme = this.scheme as EncryptionScheme;
+          return this.options.subsampleHandler(params);
+        };
+
+        const processedSegment = await processEncryptedSegment(segmentBuffer, onSubsampleData);
 
         this.push(processedSegment);
         this.buffer = this.buffer.subarray(mdatEnd);

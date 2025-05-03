@@ -5,9 +5,19 @@ import { $ } from './lib/shell';
 import { getHash } from './lib/hash';
 
 const decryptWithKey = async (key: Buffer, params: SubsampleParams) => {
-  const decipher = createDecipheriv('aes-128-ctr', key, params.iv);
-  const decrypted = Buffer.concat([decipher.update(params.data), decipher.final()]);
-  return decrypted;
+  if (params.encryptionScheme === 'cenc') {
+    const decipher = createDecipheriv('aes-128-ctr', key, params.iv);
+    decipher.setAutoPadding(false); // CTR is a stream cipher, no padding needed
+    const decrypted = Buffer.concat([decipher.update(params.data), decipher.final()]);
+    return decrypted;
+  } else if (params.encryptionScheme === 'cbcs') {
+    const decipher = createDecipheriv('aes-128-cbc', key, params.iv);
+    decipher.setAutoPadding(false); // Padding is handled by the CENC/CBCS spec, not the block cipher mode
+    const decrypted = Buffer.concat([decipher.update(params.data), decipher.final()]);
+    return decrypted;
+  } else {
+    return params.data;
+  }
 };
 
 type DecryptWithKey = {
