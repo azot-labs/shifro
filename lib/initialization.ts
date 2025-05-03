@@ -1,60 +1,6 @@
 import { bufferReplaceAll } from './buffer';
 import { Mp4Parser } from './core/parser';
 
-// Define all known codec markers
-const VIDEO_CODECS = [
-  'avc1', // H.264/AVC
-  'avc2', // H.264/AVC
-  'avc3', // H.264/AVC
-  'avc4', // H.264/AVC
-  'hev1', // H.265/HEVC
-  'hvc1', // H.265/HEVC
-  'av01', // AV1
-  'vp08', // VP8
-  'vp09', // VP9
-  'mp4v', // MPEG-4 Visual
-  'mvc1', // Multiview coding
-  'mvc2', // Multiview coding
-  'svq3', // Sorenson Video 3
-  'drac', // Dirac
-  'rpza', // Apple Video
-  'mjp2', // Motion JPEG 2000
-  'wmv3', // Windows Media Video 9
-  'dvh1', // Dolby Vision HEVC
-  'dvhe', // Dolby Vision HEVC
-  'dvav', // Dolby Vision AVC
-  'dva1', // Dolby Vision AVC
-  'vvc1', // H.266/VVC
-  'vvi1', // H.266/VVC
-];
-
-const AUDIO_CODECS = [
-  'mp4a', // AAC, MP3, etc.
-  'alac', // Apple Lossless
-  'ac-3', // Dolby Digital
-  'ec-3', // Dolby Digital Plus
-  'ac-4', // Dolby AC-4
-  'dtsc', // DTS Digital Surround
-  'dtsh', // DTS-HD High Resolution
-  'dtsl', // DTS-HD Master Audio
-  'dtse', // DTS Express
-  'dtsx', // DTS:X
-  'samr', // AMR Narrow Band
-  'sawb', // AMR Wide Band
-  'sawp', // AMR-WB+
-  'sevc', // EVRC Voice
-  'sqcp', // 13K Voice
-  'fLaC', // FLAC
-  'Opus', // Opus
-  'twos', // Linear PCM
-  'sowt', // Linear PCM
-  'lpcm', // Linear PCM
-  'alaw', // G.711 a-law
-  'ulaw', // G.711 μ-law
-  'raw ', // Raw audio
-  'vorbis', // Vorbis
-];
-
 export const isInitializationSegment = (chunk: Buffer): boolean => {
   try {
     let hasMoov = false;
