@@ -1,5 +1,6 @@
 import { findMpegBoxByName, MpegBox, parseMpegBoxes } from './box';
 import { bufferReplaceAll } from './buffer';
+import { Mp4Parser } from './core/parser';
 
 // Define all known codec markers
 const VIDEO_CODECS = [
@@ -72,50 +73,23 @@ export const isInitializationSegment = (chunk: Buffer): boolean => {
 };
 
 const getOriginalCodec = (chunk: Buffer, root: MpegBox): string | null => {
-  try {
-    const stsd = findMpegBoxByName(chunk, root, 'stsd');
-    if (!stsd) {
-      console.warn('No stsd box found');
-      return null;
-    }
-
-    const encv = stsd.children?.find((child) => child.name === 'encv');
-    const enca = stsd.children?.find((child) => child.name === 'enca');
-
-    if (encv) {
-      // Search for all video codecs
-      for (const codec of VIDEO_CODECS) {
-        const match = chunk.indexOf(codec, encv.payloadStart);
-        if (match >= 0 && match < stsd.end) {
-          console.log(`Found video codec: ${codec}`);
-          return codec;
-        }
-      }
-
-      // Fallback to avc1
-      console.log('Defaulting to avc1');
-      return 'avc1';
-    } else if (enca) {
-      // Search for all audio codecs
-      for (const codec of AUDIO_CODECS) {
-        const match = chunk.indexOf(codec, enca.payloadStart);
-        if (match >= 0 && match < stsd.end) {
-          console.log(`Found audio codec: ${codec}`);
-          return codec;
-        }
-      }
-
-      // Fallback to mp4a
-      console.log('Defaulting to mp4a');
-      return 'mp4a';
-    }
-
-    console.warn('No encv/enca box found in stsd');
-    return null;
-  } catch (e) {
-    console.warn('Failed to detect original codec:', e);
-    return null;
-  }
+  let format: string | null = null;
+  new Mp4Parser()
+    .box('moov', Mp4Parser.children)
+    .box('trak', Mp4Parser.children)
+    .box('mdia', Mp4Parser.children)
+    .box('minf', Mp4Parser.children)
+    .box('stbl', Mp4Parser.children)
+    .fullBox('stsd', Mp4Parser.sampleDescription)
+    .box('encv', Mp4Parser.visualSampleEntry)
+    .box('enca', Mp4Parser.audioSampleEntry)
+    .box('sinf', Mp4Parser.children)
+    .box('frma', (box) => {
+      const bytes = box.reader.readBytes(4);
+      format = Buffer.from(bytes).toString('ascii');
+    })
+    .parse(chunk, true, true);
+  return format;
 };
 
 export const decryptInitChunk = async (chunk: Buffer) => {
