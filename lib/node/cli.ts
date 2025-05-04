@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util';
-import { decryptFile } from '../../dempeg';
+import { decryptFile } from './utils';
 import packageJson from '../../package.json';
 
 const args = parseArgs({
@@ -18,24 +18,25 @@ const keys = (Array.isArray(args.values.key) ? args.values.key : []) as string[]
 const [keyId, keyValue] = keys[0]?.split(':') ?? [];
 const [input, output] = args.positionals;
 
-if (input && output && keyId && keyValue) {
-  console.log('Decrypting...');
-  decryptFile(input, output, { key: keyValue, keyId });
-  console.log('Done!');
-} else {
-  // Show help
-  console.log(
-    `
-dempeg version ${packageJson.version}
-(c) 2024 Vitaly Gashkov <vitalygashkov@vk.com>
+(async () => {
+  if (input && output && keyId && keyValue) {
+    await decryptFile(input, output, { key: keyValue, keyId });
+    console.log('Done!');
+  } else {
+    // Show help
+    console.log(
+      `
+  dempeg version ${packageJson.version}
+  (c) 2024 Vitaly Gashkov <vitalygashkov@vk.com>
 
-Usage: dempeg [options] <input> <output>
+  Usage: dempeg [options] <input> <output>
 
-Options:
-  --key <id>:<k>
-    <id> is either a track ID in decimal or a 128-bit KID in hex,
-    <k> is a 128-bit key in hex
-    (several --key options can be used, one for each track or KID)
-    `.trim()
-  );
-}
+  Options:
+    --key <id>:<k>
+      <id> is either a track ID in decimal or a 128-bit KID in hex,
+      <k> is a 128-bit key in hex
+      (several --key options can be used, one for each track or KID)
+      `.trim()
+    );
+  }
+})();

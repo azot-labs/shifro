@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
-import { createReadStream, type PathLike } from 'node:fs';
+import { createWriteStream, createReadStream, type PathLike } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { Readable, Writable } from 'node:stream';
+import { decryptStream } from '../../dempeg';
 
 export const readFirstNBytes = async (path: PathLike, n: number = 1 * 1024 * 1024): Promise<Buffer> => {
   const chunks: Buffer[] = [];
@@ -17,3 +20,27 @@ export const getHash = (path: string) =>
     rs.on('data', (chunk) => hash.update(chunk));
     rs.on('end', () => resolve(hash.digest('hex')));
   });
+
+export const decryptFile = async (
+  inputPath: string,
+  outputPath: string,
+  params: Parameters<typeof decryptStream>[2]
+) => {
+  const inputInfo = await stat(inputPath);
+  const inputNodeStream = createReadStream(inputPath, { highWaterMark: 1024 * 1024 * 10 });
+  const inputWebStream = Readable.toWeb(inputNodeStream) as ReadableStream;
+
+  const outputNodeStream = createWriteStream(outputPath);
+  const outputWebStream = Writable.toWeb(outputNodeStream);
+
+  await decryptStream(inputWebStream, outputWebStream, {
+    key: 'key' in params ? params.key : '',
+    keyId: params.keyId,
+    onProgress: (progress) => {
+      process.stdout.write(`\rDecrypting... [${progress}/${inputInfo.size}]`);
+      if (progress === inputInfo.size) {
+        process.stdout.write('\n');
+      }
+    },
+  });
+};

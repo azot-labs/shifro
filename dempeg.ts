@@ -51,5 +51,5 @@ const decryptStream = async (
   await processStream(readable, writable, { preventClose, onProgress, transformSample });
 };
 
-export type { TransformSampleParams as SubsampleParams };
+export type { TransformSampleParams, ProcessStreamOptions };
 export { decryptSegment, decryptStream };

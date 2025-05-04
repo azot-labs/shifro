@@ -32,14 +32,60 @@ npm install -g dempeg
 
 ### Library
 
-#### File decryption
+#### Decrypting file using Node.js streams
 
 ```js
-import { decryptFile } from 'dempeg';
+import { createWriteStream, createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { Readable, Writable } from 'node:stream';
+import { decryptStream } from 'dempeg';
 
-decryptFile('./input.mp4', './output.mp4', {
-  key: 'eb676abbcb345e96bbcf616630f1a3da',
-  keyId: '100b6c20940f779a4589152b57d2dacb',
+const key = 'eb676abbcb345e96bbcf616630f1a3da';
+const keyId = '100b6c20940f779a4589152b57d2dacb';
+
+const inputPath = './input.mp4';
+const inputInfo = await stat(inputPath);
+const inputNodeStream = createReadStream(inputPath, { highWaterMark: 1024 * 1024 * 10 });
+const inputWebStream = Readable.toWeb(inputNodeStream);
+
+const outputPath = './output.mp4';
+const outputNodeStream = createWriteStream(outputPath);
+const outputWebStream = Writable.toWeb(outputNodeStream);
+
+await decryptStream(inputWebStream, outputWebStream, {
+  key,
+  keyId,
+  onProgress: (progress) => {
+    process.stdout.write(`\rDecrypting... [${progress}/${inputInfo.size}]`);
+    if (progress === inputInfo.size) process.stdout.write('\n');
+  },
+});
+```
+
+#### Decrypting file using browser's Web Streams API
+
+```js
+import { decryptStream } from 'dempeg';
+
+const key = 'eb676abbcb345e96bbcf616630f1a3da';
+const keyId = '100b6c20940f779a4589152b57d2dacb';
+
+const waitForInput = async () =>
+  new Promise<File>((resolve) => {
+    const input = document.querySelector<HTMLInputElement>('#input')!;
+    input.addEventListener('change', () => resolve(input.files![0]));
+  });
+
+const inputFile = await waitForInput();
+const inputStream = input.stream();
+
+const outputFileHandle = window.showSaveFilePicker({ suggestedName: 'output.mp4', startIn: 'downloads' });
+const outputStream = await output.createWritable();
+
+await decryptStream(inputStream, outputStream, {
+  key,
+  keyId,
+  onProgress: (progress) => console.log(`${progress}/${input.size}`),
 });
 ```
 
@@ -48,65 +94,57 @@ decryptFile('./input.mp4', './output.mp4', {
 ```js
 import { decryptSegment } from 'dempeg';
 
-const segments = [
-  // List of MPEG-DASH segments
+const key = 'eb676abbcb345e96bbcf616630f1a3da';
+const keyId = '100b6c20940f779a4589152b57d2dacb';
+const encryptionScheme = 'cenc';
+
+const encryptedSegments = [
+  // List of binary MP4 segments (Uint8Array)
   // ...
 ];
-const results = [];
+const decryptedSegments = [];
 
-(async () => {
-  for (const segment of segments) {
-    const decrypted = await decryptSegment(segment, {
-      key: 'eb676abbcb345e96bbcf616630f1a3da',
-      keyId: '100b6c20940f779a4589152b57d2dacb',
-    });
-    results.push(decrypted);
-  }
-})();
+for (const segment of encryptedSegments) {
+  const decrypted = await decryptSegment(segment, { key, keyId, encryptionScheme });
+  decryptedSegments.push(decrypted);
+}
 
 // Do something with results...
 ```
 
-#### Custom subsample handler
+#### Transform sample data in your own way instead of built-in decryption
 
 ```js
 import { createDecipheriv } from 'node:crypto';
 import { decryptSegment } from 'dempeg';
 
-const segments = [
-  // List of MPEG-DASH segments
+const key = 'eb676abbcb345e96bbcf616630f1a3da';
+const keyId = '100b6c20940f779a4589152b57d2dacb';
+const encryptionScheme = 'cenc';
+
+const encryptedSegments = [
+  // List of binary MP4 segments (Uint8Array)
   // ...
 ];
-const results = [];
+const decryptedSegments = [];
 
-(async () => {
-  for (const segment of segments) {
-    const decrypted = await decryptSegment(segment, {
-      keyId: '100b6c20940f779a4589152b57d2dacb',
-      decryptSubsampleFn: (params) => {
-        // Custom subsample handler
-        // ...
-        const subsample = params.data;
-        const iv = params.iv;
-        const key = 'eb676abbcb345e96bbcf616630f1a3da';
-        const decipher = createDecipheriv('aes-128-ctr', key, iv);
-        const decrypted = Buffer.concat([decipher.update(subsample), decipher.final()]);
-        return decrypted;
-      },
-    });
-    results.push(decrypted);
-  }
-})();
+for (const segment of encryptedSegments) {
+  const decrypted = await decryptSegment(segment, {
+    keyId,
+    transformSample: (params) => {
+      // Implement custom handler for subsample processing
+      // ...
+      const sampleData = params.data;
+      const iv = params.iv;
+      const decipher = createDecipheriv('aes-128-ctr', key, iv);
+      const decrypted = Buffer.concat([decipher.update(sampleData), decipher.final()]);
+      return decrypted;
+    },
+  });
+  decryptedSegments.push(decrypted);
+}
 
 // Do something with results...
-```
-
-Shell-like syntax:
-
-```js
-import { $ } from 'dempeg';
-
-$`dempeg --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb ./input.mp4 ./output.mp4`;
 ```
 
 ### CLI
