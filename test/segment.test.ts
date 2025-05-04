@@ -1,24 +1,24 @@
 import { appendFile, readFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { test, expect } from 'vitest';
 import { decryptSegment } from '../shifro';
 import { getHash } from '../lib/node/utils';
-
-// https://bitmovin.com/demos/drm
-
-const KEY = 'eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb';
+import { ASSET_DATA } from './utils';
 
 test('decrypt segment', async () => {
-  const inputs = ['./test/assets/segments/_init.mp4'];
+  const inputs = [join(ASSET_DATA.dir, '_init.mp4')];
   for (let i = 0; i < 3; i++) {
-    const input = `./test/assets/segments/${i.toString().padStart(2, '0')}.m4s`;
-    inputs.push(input);
+    inputs.push(join(ASSET_DATA.dir, `${i.toString().padStart(2, '0')}.m4s`));
   }
-  const output = './test/assets/bitmovin.dec.mp4';
+  const output = ASSET_DATA.outputPath;
   await rm(output, { force: true });
-  const [id, value] = KEY.split(':');
   for (const input of inputs) {
     const encrypted = await readFile(input);
-    const decrypted = await decryptSegment(encrypted, { keyId: id, key: value, encryptionScheme: 'cenc' });
+    const decrypted = await decryptSegment(encrypted, {
+      keyId: ASSET_DATA.keyId,
+      key: ASSET_DATA.keyValue,
+      encryptionScheme: 'cenc',
+    });
     await appendFile(output, decrypted);
   }
   const actualHash = await getHash(output);

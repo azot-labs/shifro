@@ -1,27 +1,22 @@
 import { expect, test } from 'vitest';
-import { readFirstNBytes } from '../lib/node/utils';
 import { parseInit } from '../lib/initialization';
+import { readFirstNBytes, ASSET_DATA } from './utils';
 
 test('parse mp4 initialization data', async () => {
-  const input = './test/bitmovin.enc.mp4';
-  const data = await readFirstNBytes(input);
+  const data = await readFirstNBytes(ASSET_DATA.inputPath);
   const info = parseInit(data);
 
-  expect(info.defaultKID).toBe('eb676abbcb345e96bbcf616630f1a3da');
+  expect(info.defaultKID).toBe(ASSET_DATA.keyId);
   expect(info.schemeType).toBe('cenc');
   expect(info.psshList.length).toBe(2);
 
   const playready = info.psshList[0];
   expect(playready.version).toBe(0);
   expect(playready.systemId).toBe('9a04f079-9840-4286-ab92-e65be0885f95');
-  expect(playready.pssh).toBe(
-    'AAADInBzc2gAAAAAmgTweZhAQoarkuZb4IhflQAAAwICAwAAAQABAPgCPABXAFIATQBIAEUAQQBEAEUAUgAgAHgAbQBsAG4AcwA9ACIAaAB0AHQAcAA6AC8ALwBzAGMAaABlAG0AYQBzAC4AbQBpAGMAcgBvAHMAbwBmAHQALgBjAG8AbQAvAEQAUgBNAC8AMgAwADAANwAvADAAMwAvAFAAbABhAHkAUgBlAGEAZAB5AEgAZQBhAGQAZQByACIAIAB2AGUAcgBzAGkAbwBuAD0AIgA0AC4AMAAuADAALgAwACIAPgA8AEQAQQBUAEEAPgA8AFAAUgBPAFQARQBDAFQASQBOAEYATwA+ADwASwBFAFkATABFAE4APgAxADYAPAAvAEsARQBZAEwARQBOAD4APABBAEwARwBJAEQAPgBBAEUAUwBDAFQAUgA8AC8AQQBMAEcASQBEAD4APAAvAFAAUgBPAFQARQBDAFQASQBOAEYATwA+ADwASwBJAEQAPgB1ADIAcABuADYAegBUAEwAbABsADYANwB6ADIARgBtAE0AUABHAGoAMgBnAD0APQA8AC8ASwBJAEQAPgA8AEMASABFAEMASwBTAFUATQA+AE4ANABRAHkAYwBZAE4AegBOAHgAWQA9ADwALwBDAEgARQBDAEsAUwBVAE0APgA8AEwAQQBfAFUAUgBMAD4AaAB0AHQAcAA6AC8ALwBwAGwAYQB5AHIAZQBhAGQAeQAuAGQAaQByAGUAYwB0AHQAYQBwAHMALgBuAGUAdAAvAHAAcgAvAHMAdgBjAC8AcgBpAGcAaAB0AHMAbQBhAG4AYQBnAGUAcgAuAGEAcwBtAHgAPwBQAGwAYQB5AFIAaQBnAGgAdAA9ADEAJgBhAG0AcAA7AEMAbwBuAHQAZQBuAHQASwBlAHkAPQBFAEEAdABzAEkASgBRAFAAZAA1AHAARgBpAFIAVQByAFYAOQBMAGEAeQB3AD0APQA8AC8ATABBAF8AVQBSAEwAPgA8AC8ARABBAFQAQQA+ADwALwBXAFIATQBIAEUAQQBEAEUAUgA+AA=='
-  );
+  expect(playready.pssh).toBe(ASSET_DATA.pssh.playready);
 
   const widevine = info.psshList[1];
   expect(widevine.version).toBe(0);
   expect(widevine.systemId).toBe('edef8ba9-79d6-4ace-a3c8-27dcd51d21ed');
-  expect(widevine.pssh).toBe(
-    'AAAAW3Bzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAADsIARIQ62dqu8s0Xpa7z2FmMPGj2hoNd2lkZXZpbmVfdGVzdCIQZmtqM2xqYVNkZmFsa3IzaioCSEQyAA=='
-  );
+  expect(widevine.pssh).toBe(ASSET_DATA.pssh.widevine);
 });
