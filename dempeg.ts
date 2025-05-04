@@ -1,4 +1,4 @@
-import { createDecipheriv } from 'node:crypto';
+import { decrypt } from './lib/decrypt';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Readable, Writable } from 'node:stream';
 import { processStream } from './lib/stream';
@@ -8,17 +8,12 @@ import { getHash } from './lib/node/utils';
 
 export const decryptWithKey = async (key: Buffer, params: SubsampleParams) => {
   const scheme = params.encryptionScheme;
+  const iv = params.iv;
+  const data = params.data;
   if (scheme === 'cbcs') {
-    const decipher = createDecipheriv('aes-128-cbc', key, params.iv);
-    decipher.setAutoPadding(false); // Padding is handled by the CENC/CBCS spec, not the block cipher mode
-    const decrypted = Buffer.concat([decipher.update(params.data), decipher.final()]);
-    return decrypted;
+    return decrypt({ key, iv, data, algorithm: 'AES-CBC' });
   } else {
-    // Default to CENC
-    const decipher = createDecipheriv('aes-128-ctr', key, params.iv);
-    decipher.setAutoPadding(false); // CTR is a stream cipher, no padding needed
-    const decrypted = Buffer.concat([decipher.update(params.data), decipher.final()]);
-    return decrypted;
+    return decrypt({ key, iv, data, algorithm: 'AES-CTR' });
   }
 };
 
