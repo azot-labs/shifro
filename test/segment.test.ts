@@ -1,7 +1,7 @@
-import { test, expect } from 'vitest';
-import { decryptSegment } from '../mp4unbox';
-import { getHash } from '../lib/node/utils';
 import { appendFile, readFile, rm } from 'node:fs/promises';
+import { test, expect } from 'vitest';
+import { decryptSegment } from '../shifro';
+import { getHash } from '../lib/node/utils';
 
 // https://bitmovin.com/demos/drm
 

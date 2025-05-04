@@ -1,8 +1,8 @@
-import { test, expect } from 'vitest';
-import { getHash } from '../lib/node/utils';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Readable, Writable } from 'node:stream';
-import { decryptStream } from '../mp4unbox';
+import { test, expect } from 'vitest';
+import { decryptStream } from '../shifro';
+import { getHash } from '../lib/node/utils';
 
 // https://bitmovin.com/demos/drm
 

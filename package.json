@@ -1,5 +1,5 @@
 {
-  "name": "mp4unbox",
+  "name": "shifro",
   "version": "0.1.0",
   "description": "A lightweight, dependency-free MP4 decrypter",
   "files": [
@@ -9,32 +9,32 @@
     "dev": "vite",
     "build": "npm run build:lib && npm run build:cli",
     "build:cli": "tsdown ./lib/node/cli.ts --format cjs --dts --minify --no-clean",
-    "build:lib": "tsdown mp4unbox.ts --format cjs --format esm --dts --minify",
+    "build:lib": "tsdown shifro.ts --format cjs --format esm --dts --minify",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "prepublishOnly": "npm run build"
   },
   "bin": {
-    "mp4unbox": "./dist/cli.cjs"
+    "shifro": "./dist/cli.cjs"
   },
   "type": "module",
-  "main": "./dist/mp4unbox.js",
-  "types": "./dist/mp4unbox.d.ts",
+  "main": "./dist/shifro.js",
+  "types": "./dist/shifro.d.ts",
   "exports": {
     ".": {
       "require": {
-        "types": "./dist/mp4unbox.d.cts",
-        "default": "./dist/mp4unbox.cjs"
+        "types": "./dist/shifro.d.cts",
+        "default": "./dist/shifro.cjs"
       },
       "import": {
-        "types": "./dist/mp4unbox.d.ts",
-        "default": "./dist/mp4unbox.js"
+        "types": "./dist/shifro.d.ts",
+        "default": "./dist/shifro.js"
       }
     }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/streamyx-labs/mp4unbox.git"
+    "url": "git+https://github.com/streamyx-labs/shifro.git"
   },
   "keywords": [
     "mp4",
@@ -53,7 +53,7 @@
     "shaka-packager"
   ],
   "bugs": {
-    "url": "https://github.com/streamyx-labs/mp4unbox/issues",
+    "url": "https://github.com/streamyx-labs/shifro/issues",
     "email": "vitalygashkov@vk.com"
   },
   "author": "Vitaly Gashkov <vitalygashkov@vk.com>",

@@ -1,4 +1,4 @@
-# mp4unbox
+# shifro
 
 A lightweight, dependency-free MP4 decrypter
 
@@ -19,13 +19,13 @@ A lightweight, dependency-free MP4 decrypter
 Install library as dependency for your project:
 
 ```bash
-npm install mp4unbox
+npm install shifro
 ```
 
 Install globally to use as command-line tool:
 
 ```bash
-npm install -g mp4unbox
+npm install -g shifro
 ```
 
 ## Usage
@@ -38,7 +38,7 @@ npm install -g mp4unbox
 import { createWriteStream, createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { Readable, Writable } from 'node:stream';
-import { decryptStream } from 'mp4unbox';
+import { decryptStream } from 'shifro';
 
 const key = 'eb676abbcb345e96bbcf616630f1a3da';
 const keyId = '100b6c20940f779a4589152b57d2dacb';
@@ -65,7 +65,7 @@ await decryptStream(inputWebStream, outputWebStream, {
 #### Decrypting file using browser's Web Streams API
 
 ```js
-import { decryptStream } from 'mp4unbox';
+import { decryptStream } from 'shifro';
 
 const key = 'eb676abbcb345e96bbcf616630f1a3da';
 const keyId = '100b6c20940f779a4589152b57d2dacb';
@@ -92,7 +92,7 @@ await decryptStream(inputStream, outputStream, {
 #### Segment-by-segment decryption
 
 ```js
-import { decryptSegment } from 'mp4unbox';
+import { decryptSegment } from 'shifro';
 
 const key = 'eb676abbcb345e96bbcf616630f1a3da';
 const keyId = '100b6c20940f779a4589152b57d2dacb';
@@ -116,7 +116,7 @@ for (const segment of encryptedSegments) {
 
 ```js
 import { createDecipheriv } from 'node:crypto';
-import { decryptSegment } from 'mp4unbox';
+import { decryptSegment } from 'shifro';
 
 const key = 'eb676abbcb345e96bbcf616630f1a3da';
 const keyId = '100b6c20940f779a4589152b57d2dacb';
@@ -150,5 +150,5 @@ for (const segment of encryptedSegments) {
 ### CLI
 
 ```bash
-mp4unbox --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb ./input.mp4 ./output.mp4
+shifro --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb ./input.mp4 ./output.mp4
 ```
