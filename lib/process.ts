@@ -7,7 +7,7 @@ import { concatUint8Array, copyUint8Array, writeUint8Array } from './buffer';
 
 export type EncryptionScheme = 'cenc' | 'cbcs';
 
-export type SubsampleParams = {
+export type TransformSampleParams = {
   encryptionScheme?: EncryptionScheme;
   data: Uint8Array;
   // Initialization Vector (IV) of sample
@@ -16,9 +16,9 @@ export type SubsampleParams = {
   timestamp: number;
 };
 
-export type SubsampleHandler = (params: SubsampleParams) => Promise<Uint8Array | null>;
+export type TransformSampleFn = (params: TransformSampleParams) => Promise<Uint8Array | null>;
 
-const processEncryptedSegment = async (segment: Uint8Array, subsampleHandler: SubsampleHandler) => {
+const processEncryptedSegment = async (segment: Uint8Array, transformSample: TransformSampleFn) => {
   const isInit = isInitData(segment);
   if (isInit) return processInit(segment);
 
@@ -83,12 +83,12 @@ const processEncryptedSegment = async (segment: Uint8Array, subsampleHandler: Su
 
       // Decrypt all encrypted parts at once
       const encryptedData = concatUint8Array(encryptedParts);
-      const subsampleParams: SubsampleParams = {
+      const subsampleParams: TransformSampleParams = {
         iv: sencSample.iv,
         data: encryptedData,
         timestamp: time,
       };
-      const decryptedData = await subsampleHandler(subsampleParams);
+      const decryptedData = await transformSample(subsampleParams);
 
       if (decryptedData) {
         // Reconstruct the sample with clear and decrypted parts

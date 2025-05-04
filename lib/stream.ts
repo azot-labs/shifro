@@ -1,5 +1,5 @@
 import { Mp4Parser } from './parser';
-import { EncryptionScheme, processEncryptedSegment, SubsampleHandler, SubsampleParams } from './process';
+import { EncryptionScheme, processEncryptedSegment, TransformSampleFn, TransformSampleParams } from './process';
 import { isInitData, parseInit, processInit } from './initialization';
 import { concatUint8Array } from './buffer';
 
@@ -39,7 +39,7 @@ class Mp4SegmentTransformer {
   private isProcessingInit = true;
   private scheme: string | null = null;
 
-  constructor(private options: { subsampleHandler: SubsampleHandler }) {}
+  constructor(private options: { transformSample: TransformSampleFn }) {}
 
   async transform(chunk: Uint8Array, controller: TransformStreamDefaultController) {
     try {
@@ -69,9 +69,9 @@ class Mp4SegmentTransformer {
           break;
         }
 
-        const onSubsampleData = (params: SubsampleParams) => {
+        const onSubsampleData = (params: TransformSampleParams) => {
           params.encryptionScheme = this.scheme as EncryptionScheme;
-          return this.options.subsampleHandler(params);
+          return this.options.transformSample(params);
         };
         const processedSegment = await processEncryptedSegment(segment, onSubsampleData);
 
@@ -91,15 +91,20 @@ class Mp4SegmentTransformer {
   }
 }
 
+export interface ProcessStreamOptions {
+  transformSample: TransformSampleFn;
+  preventClose?: boolean;
+}
+
 export const processStream = async (
   readable: ReadableStream,
   writable: WritableStream,
-  onSubsampleData: SubsampleHandler
+  { transformSample, preventClose }: ProcessStreamOptions
 ) => {
-  const transformer = new Mp4SegmentTransformer({ subsampleHandler: onSubsampleData });
+  const transformer = new Mp4SegmentTransformer({ transformSample });
   const transform = new TransformStream({
     transform: (chunk, controller) => transformer.transform(chunk, controller),
     flush: (controller) => transformer.flush(controller),
   });
-  await readable.pipeThrough(transform).pipeTo(writable, { preventClose: true });
+  await readable.pipeThrough(transform).pipeTo(writable, { preventClose });
 };
