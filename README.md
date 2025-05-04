@@ -77,10 +77,10 @@ const waitForInput = async () =>
   });
 
 const inputFile = await waitForInput();
-const inputStream = input.stream();
+const inputStream = inputFile.stream();
 
 const outputFileHandle = window.showSaveFilePicker({ suggestedName: 'output.mp4', startIn: 'downloads' });
-const outputStream = await output.createWritable();
+const outputStream = await outputFileHandle.createWritable();
 
 await decryptStream(inputStream, outputStream, {
   key,
