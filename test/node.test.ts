@@ -2,7 +2,7 @@ import { test, expect } from 'vitest';
 import { getHash } from '../lib/node/utils';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Readable, Writable } from 'node:stream';
-import { decryptStream } from '../dempeg';
+import { decryptStream } from '../mp4unbox';
 
 // https://bitmovin.com/demos/drm
 

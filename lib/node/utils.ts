@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { createWriteStream, createReadStream, type PathLike } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { Readable, Writable } from 'node:stream';
-import { decryptStream } from '../../dempeg';
+import { decryptStream } from '../../mp4unbox';
 
 export const readFirstNBytes = async (path: PathLike, n: number = 1 * 1024 * 1024): Promise<Buffer> => {
   const chunks: Buffer[] = [];

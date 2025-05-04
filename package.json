@@ -1,25 +1,40 @@
 {
-  "name": "dempeg",
+  "name": "mp4unbox",
   "version": "0.1.0",
-  "description": "A lightweight, dependency-free MP4 decrypter for Node.js",
-  "main": "./dist/dempeg.js",
-  "types": "./dist/dempeg.d.ts",
+  "description": "A lightweight, dependency-free MP4 decrypter",
   "files": [
     "dist"
   ],
   "scripts": {
     "dev": "vite",
-    "build": "tsdown dempeg.ts ./lib/cli.ts --format cjs --format esm --dts --minify",
+    "build": "npm run build:lib && npm run build:cli",
+    "build:cli": "tsdown ./lib/node/cli.ts --format cjs --dts --minify --no-clean",
+    "build:lib": "tsdown mp4unbox.ts --format cjs --format esm --dts --minify",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "prepublishOnly": "npm run build"
   },
   "bin": {
-    "dempeg": "./lib/cli.js"
+    "mp4unbox": "./dist/cli.cjs"
+  },
+  "type": "module",
+  "main": "./dist/mp4unbox.js",
+  "types": "./dist/mp4unbox.d.ts",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/mp4unbox.d.cts",
+        "default": "./dist/mp4unbox.cjs"
+      },
+      "import": {
+        "types": "./dist/mp4unbox.d.ts",
+        "default": "./dist/mp4unbox.js"
+      }
+    }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vitalygashkov/dempeg.git"
+    "url": "git+https://github.com/streamyx-labs/mp4unbox.git"
   },
   "keywords": [
     "mp4",
@@ -38,7 +53,7 @@
     "shaka-packager"
   ],
   "bugs": {
-    "url": "https://github.com/vitalygashkov/dempeg/issues",
+    "url": "https://github.com/streamyx-labs/mp4unbox/issues",
     "email": "vitalygashkov@vk.com"
   },
   "author": "Vitaly Gashkov <vitalygashkov@vk.com>",
