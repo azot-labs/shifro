@@ -42,13 +42,13 @@ const decryptSegment = async (segment: Uint8Array, params: DecryptParams) => {
 const decryptStream = async (
   readable: ReadableStream,
   writable: WritableStream,
-  { preventClose, ...params }: DecryptParams & ProcessStreamOptions
+  { preventClose, onProgress, ...params }: DecryptParams & Omit<ProcessStreamOptions, 'transformSample'>
 ) => {
   const hasKey = 'key' in params;
   const key = new Uint8Array(parseHex(hasKey ? params.key : ''));
   const decryptFn = async (params: TransformSampleParams) => decryptWithKey(key, params);
   const transformSample = hasKey ? decryptFn : params.transformSample;
-  await processStream(readable, writable, { transformSample, preventClose });
+  await processStream(readable, writable, { preventClose, onProgress, transformSample });
 };
 
 export type { TransformSampleParams as SubsampleParams };
