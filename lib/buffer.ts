@@ -58,4 +58,102 @@ const bufferToArrayBuffer = (buffer: Uint8Array) => {
   return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 };
 
-export { bufferReplaceAll, bitShiftLeftBuffer, xorBuffer, bufferToArrayBuffer };
+const bufferIncludes = (buffer: Uint8Array, search: string | Uint8Array | number, offset: number = 0): boolean => {
+  const encoder = new TextEncoder();
+  let searchBytes: Uint8Array;
+
+  if (typeof search === 'string') {
+    searchBytes = encoder.encode(search);
+  } else if (typeof search === 'number') {
+    searchBytes = new Uint8Array([search]);
+  } else {
+    searchBytes = search;
+  }
+
+  if (searchBytes.length === 0) return true; // Empty string always matches
+  if (buffer.length < searchBytes.length) return false;
+
+  return indexOfUint8Array(buffer, searchBytes, offset) !== -1;
+};
+
+const concatUint8Array = (list: Uint8Array[], totalLength?: number): Uint8Array<ArrayBuffer> => {
+  if (list.length === 0) return new Uint8Array(0);
+
+  // Calculate total length if not provided
+  let calculatedLength = totalLength ?? list.reduce((acc, curr) => acc + curr.length, 0);
+
+  // Ensure we don't exceed available data
+  calculatedLength = Math.min(
+    calculatedLength,
+    list.reduce((acc, curr) => acc + curr.length, 0)
+  );
+
+  const result = new Uint8Array(calculatedLength);
+  let offset = 0;
+
+  for (const bytes of list) {
+    if (offset >= calculatedLength) break;
+    const chunk = bytes.subarray(0, Math.min(bytes.length, calculatedLength - offset));
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return result;
+};
+
+const copyUint8Array = (
+  source: Uint8Array,
+  target: Uint8Array,
+  targetStart: number = 0,
+  sourceStart: number = 0,
+  sourceEnd: number = source.length
+): number => {
+  // Parameter validation and normalization
+  targetStart = Math.max(0, Math.min(targetStart, target.length));
+  sourceStart = Math.max(0, Math.min(sourceStart, source.length));
+  sourceEnd = Math.min(sourceEnd, source.length);
+
+  if (sourceEnd < sourceStart) sourceEnd = sourceStart;
+
+  const bytesToCopy = Math.min(sourceEnd - sourceStart, target.length - targetStart);
+
+  if (bytesToCopy <= 0) return 0;
+
+  // Perform the actual copy
+  target.set(source.subarray(sourceStart, sourceStart + bytesToCopy), targetStart);
+
+  return bytesToCopy;
+};
+
+const writeUint8Array = (target: Uint8Array, str: string, offset: number = 0, maxBytes?: number): number => {
+  const encoder = new TextEncoder();
+  const encoded = encoder.encode(str);
+
+  // Normalize parameters
+  const safeOffset = Math.max(0, Math.min(offset, target.length));
+  const remainingSpace = target.length - safeOffset;
+
+  // Calculate how many bytes we can actually write
+  let bytesToWrite = encoded.length;
+  if (typeof maxBytes === 'number') {
+    bytesToWrite = Math.min(bytesToWrite, maxBytes);
+  }
+  bytesToWrite = Math.min(bytesToWrite, remainingSpace);
+
+  if (bytesToWrite <= 0) return 0;
+
+  // Perform the write operation
+  target.set(encoded.subarray(0, bytesToWrite), safeOffset);
+  return bytesToWrite;
+};
+
+export {
+  bufferReplaceAll,
+  bitShiftLeftBuffer,
+  xorBuffer,
+  bufferToArrayBuffer,
+  bufferIncludes,
+  concatUint8Array,
+  copyUint8Array,
+  writeUint8Array,
+};

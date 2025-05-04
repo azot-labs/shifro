@@ -11,12 +11,7 @@ const fromDataView = (dataView: DataView, position = 0, length?: number) => {
 };
 
 export class DataViewReaderError extends Error {
-  constructor(
-    public severity: string,
-    public category: string,
-    public code: string,
-    message?: string,
-  ) {
+  constructor(public severity: string, public category: string, public code: string, message?: string) {
     super(message);
     this.name = 'DataViewReaderError';
   }
@@ -92,12 +87,7 @@ export class DataViewReader {
     }
 
     if (high > 0x1fffff) {
-      throw new DataViewReaderError(
-        'CRITICAL',
-        'MEDIA',
-        'JS_INTEGER_OVERFLOW',
-        '64-bit integer overflow',
-      );
+      throw new DataViewReaderError('CRITICAL', 'MEDIA', 'JS_INTEGER_OVERFLOW', '64-bit integer overflow');
     }
 
     this.position += 8;
@@ -143,7 +133,7 @@ export class DataViewReader {
 
     const buffer = new Uint8Array(this.dataView.buffer, start, this.position - start);
     this.position++; // Skip null terminator
-    return Buffer.from(buffer).toString('utf8');
+    return new TextDecoder().decode(buffer);
   }
 
   private checkBounds(bytes: number): void {
@@ -153,11 +143,6 @@ export class DataViewReader {
   }
 
   private outOfBounds(): DataViewReaderError {
-    return new DataViewReaderError(
-      'CRITICAL',
-      'MEDIA',
-      'BUFFER_READ_OUT_OF_BOUNDS',
-      'Read operation out of bounds',
-    );
+    return new DataViewReaderError('CRITICAL', 'MEDIA', 'BUFFER_READ_OUT_OF_BOUNDS', 'Read operation out of bounds');
   }
 }

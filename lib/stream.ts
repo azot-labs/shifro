@@ -1,9 +1,10 @@
 import { Mp4Parser } from './parser';
 import { EncryptionScheme, processEncryptedSegment, SubsampleHandler, SubsampleParams } from './process';
 import { isInitData, parseInit, processInit } from './initialization';
+import { concatUint8Array } from './buffer';
 
 class Mp4SegmentTransformer {
-  private buffer: Buffer = Buffer.alloc(0);
+  private buffer = new Uint8Array();
   private isProcessingInit = true;
   private scheme: string | null = null;
 
@@ -11,7 +12,7 @@ class Mp4SegmentTransformer {
 
   async transform(chunk: Uint8Array, controller: TransformStreamDefaultController) {
     try {
-      this.buffer = Buffer.concat([this.buffer, Buffer.from(chunk)]);
+      this.buffer = concatUint8Array([this.buffer, chunk]);
 
       while (this.buffer.length >= 8) {
         if (this.isProcessingInit) {

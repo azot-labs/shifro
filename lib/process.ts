@@ -3,21 +3,22 @@ import { parseSencBox, type ParsedSenc } from './parsing/senc';
 import { parseTrunBox, type ParsedTrun } from './parsing/trun';
 import { parseTfhdBox, type ParsedTfhd } from './parsing/tfhd';
 import { processInit, isInitData } from './initialization';
+import { concatUint8Array, copyUint8Array, writeUint8Array } from './buffer';
 
 export type EncryptionScheme = 'cenc' | 'cbcs';
 
 export type SubsampleParams = {
   encryptionScheme?: EncryptionScheme;
-  data: Buffer;
+  data: Uint8Array;
   // Initialization Vector (IV) of sample
-  iv: Buffer;
+  iv: Uint8Array;
   // Presentation timestamp (PTS) of sample in the media timeline
   timestamp: number;
 };
 
 export type SubsampleHandler = (params: SubsampleParams) => Promise<Uint8Array | null>;
 
-const processEncryptedSegment = async (segment: Buffer, subsampleHandler: SubsampleHandler) => {
+const processEncryptedSegment = async (segment: Uint8Array, subsampleHandler: SubsampleHandler) => {
   const isInit = isInitData(segment);
   if (isInit) return processInit(segment);
 
@@ -67,7 +68,7 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
     if (hasEncrypted) {
       let offset = 0;
       // First collect all encrypted parts
-      const encryptedParts: Buffer[] = [];
+      const encryptedParts: Uint8Array[] = [];
       for (const subsample of sencSample.subsamples) {
         offset += subsample.bytesOfClearData;
         if (subsample.bytesOfEncryptedData > 0) {
@@ -81,7 +82,7 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
       }
 
       // Decrypt all encrypted parts at once
-      const encryptedData = Buffer.concat(encryptedParts);
+      const encryptedData = concatUint8Array(encryptedParts);
       const subsampleParams: SubsampleParams = {
         iv: sencSample.iv,
         data: encryptedData,
@@ -116,8 +117,8 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
           }
         }
 
-        const decryptedSample = Buffer.concat(decryptedSampleParts);
-        decryptedSample.copy(segment, mdatOffset + position);
+        const decryptedSample = concatUint8Array(decryptedSampleParts);
+        copyUint8Array(decryptedSample, segment, mdatOffset + position);
       }
     }
 
@@ -131,7 +132,7 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
     .box('senc', (box) => {
       const newName = 'skip';
       const offset = box.start + newName.length;
-      segment.write(newName, offset);
+      writeUint8Array(segment, newName, offset);
     })
     .parse(segment, true, true);
 

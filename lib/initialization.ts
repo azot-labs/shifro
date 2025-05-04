@@ -1,9 +1,9 @@
-import { bufferReplaceAll } from './buffer';
+import { bufferReplaceAll, bufferIncludes } from './buffer';
 import { Mp4Parser } from './parser';
 import { parseTencBox } from './parsing/tenc';
 import { parsePsshBox } from './parsing/pssh';
 
-export const isInitData = (chunk: Buffer): boolean => {
+export const isInitData = (chunk: Uint8Array): boolean => {
   try {
     let hasMoov = false;
     let hasMoof = false;
@@ -25,7 +25,7 @@ export const isInitData = (chunk: Buffer): boolean => {
   }
 };
 
-const getOriginalCodec = (chunk: Buffer): string | null => {
+const getOriginalCodec = (chunk: Uint8Array): string | null => {
   let format: string | null = null;
   new Mp4Parser()
     .box('moov', Mp4Parser.children)
@@ -39,13 +39,13 @@ const getOriginalCodec = (chunk: Buffer): string | null => {
     .box('sinf', Mp4Parser.children)
     .box('frma', (box) => {
       const bytes = box.reader.readBytes(4);
-      format = Buffer.from(bytes).toString('ascii');
+      format = new TextDecoder().decode(bytes);
     })
     .parse(chunk, true, true);
   return format;
 };
 
-export const processInit = async (chunk: Buffer) => {
+export const processInit = async (chunk: Uint8Array) => {
   // Get original codec from encryption metadata
   const originalCodec = getOriginalCodec(chunk);
 
@@ -60,7 +60,7 @@ export const processInit = async (chunk: Buffer) => {
   } else {
     // Fallback to default codecs if detection fails
     console.warn('Could not detect original codec, using fallback values');
-    const contentType = chunk.includes('encv') ? 'video' : 'audio';
+    const contentType = bufferIncludes(chunk, 'encv') ? 'video' : 'audio';
     if (contentType === 'video') {
       bufferReplaceAll(chunk, 'encv', 'avc1');
     } else {
@@ -92,7 +92,7 @@ export const parseInit = (data: Uint8Array) => {
     .box('sinf', Mp4Parser.children)
     .box('schi', Mp4Parser.children)
     .fullBox('schm', (box) => {
-      initInfo.schemeType = Buffer.from(box.reader.readBytes(4)).toString('ascii');
+      initInfo.schemeType = new TextDecoder().decode(box.reader.readBytes(4));
     })
     .fullBox('tenc', (box) => {
       const { defaultKID } = parseTencBox(box.reader);
