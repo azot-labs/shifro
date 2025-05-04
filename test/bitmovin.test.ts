@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
 import { decryptFile } from '../dempeg';
-import { getHash } from '../lib/hash';
+import { getHash } from '../lib/node/utils';
 
 // https://bitmovin.com/demos/drm
 

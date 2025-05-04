@@ -1,4 +1,4 @@
-import { DataViewReader } from '../core/data-view-reader';
+import { DataViewReader } from '../data-view-reader';
 
 export const audioSampleEntry = (reader: DataViewReader) => {
   reader.skip(6); // Skip "reserved"

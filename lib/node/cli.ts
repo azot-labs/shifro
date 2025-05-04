@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util';
-import { decryptFile } from '../dempeg';
-import packageJson from '../package.json';
+import { decryptFile } from '../../dempeg';
+import packageJson from '../../package.json';
 
 const args = parseArgs({
   allowPositionals: true,

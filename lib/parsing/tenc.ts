@@ -1,4 +1,4 @@
-import { DataViewReader } from '../core/data-view-reader';
+import { DataViewReader } from '../data-view-reader';
 
 // Track Encryption Box (TENC)
 export const parseTencBox = (reader: DataViewReader) => {

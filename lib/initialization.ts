@@ -1,7 +1,9 @@
-import { bufferReplaceAll } from './buffer';
-import { Mp4Parser } from './core/parser';
+import { bufferReplaceAll } from './node/buffer';
+import { Mp4Parser } from './parser';
+import { parseTencBox } from './parsing/tenc';
+import { parsePsshBox } from './parsing/pssh';
 
-export const isInitializationSegment = (chunk: Buffer): boolean => {
+export const isInitData = (chunk: Buffer): boolean => {
   try {
     let hasMoov = false;
     let hasMoof = false;
@@ -43,7 +45,7 @@ const getOriginalCodec = (chunk: Buffer): string | null => {
   return format;
 };
 
-export const decryptInitChunk = async (chunk: Buffer) => {
+export const processInit = async (chunk: Buffer) => {
   // Get original codec from encryption metadata
   const originalCodec = getOriginalCodec(chunk);
 
@@ -67,4 +69,35 @@ export const decryptInitChunk = async (chunk: Buffer) => {
   }
 
   return chunk;
+};
+
+type PsshInfo = ReturnType<typeof parsePsshBox>;
+
+export const parseInit = (data: Uint8Array) => {
+  const initInfo = {
+    schemeType: '',
+    defaultKID: '',
+    psshList: [] as PsshInfo[],
+  };
+  new Mp4Parser()
+    .box('moov', Mp4Parser.children)
+    .box('trak', Mp4Parser.children)
+    .box('mdia', Mp4Parser.children)
+    .box('minf', Mp4Parser.children)
+    .box('stbl', Mp4Parser.children)
+    .fullBox('stsd', Mp4Parser.sampleDescription)
+    .fullBox('pssh', (box) => initInfo.psshList.push(parsePsshBox(box)))
+    .box('encv', Mp4Parser.visualSampleEntry)
+    .box('enca', Mp4Parser.audioSampleEntry)
+    .box('sinf', Mp4Parser.children)
+    .box('schi', Mp4Parser.children)
+    .fullBox('schm', (box) => {
+      initInfo.schemeType = Buffer.from(box.reader.readBytes(4)).toString('ascii');
+    })
+    .fullBox('tenc', (box) => {
+      const { defaultKID } = parseTencBox(box.reader);
+      initInfo.defaultKID = defaultKID;
+    })
+    .parse(data, false, true);
+  return initInfo;
 };

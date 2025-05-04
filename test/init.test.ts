@@ -1,21 +1,24 @@
 import { expect, test } from 'vitest';
-import { readFirstNBytes } from '../lib/utils';
-import { getPsshList } from '../lib/parser/pssh-list';
+import { readFirstNBytes } from '../lib/node/utils';
+import { parseInit } from '../lib/initialization';
 
-test('parsing pssh from encrypted mp4', async () => {
+test('parse mp4 initialization data', async () => {
   const input = './test/bitmovin.enc.mp4';
   const data = await readFirstNBytes(input);
-  const list = await getPsshList(data);
-  expect(list.length).toBe(2);
+  const info = parseInit(data);
 
-  const playready = list[0];
+  expect(info.defaultKID).toBe('eb676abbcb345e96bbcf616630f1a3da');
+  expect(info.schemeType).toBe('cenc');
+  expect(info.psshList.length).toBe(2);
+
+  const playready = info.psshList[0];
   expect(playready.version).toBe(0);
   expect(playready.systemId).toBe('9a04f079-9840-4286-ab92-e65be0885f95');
   expect(playready.pssh).toBe(
     'AAADInBzc2gAAAAAmgTweZhAQoarkuZb4IhflQAAAwICAwAAAQABAPgCPABXAFIATQBIAEUAQQBEAEUAUgAgAHgAbQBsAG4AcwA9ACIAaAB0AHQAcAA6AC8ALwBzAGMAaABlAG0AYQBzAC4AbQBpAGMAcgBvAHMAbwBmAHQALgBjAG8AbQAvAEQAUgBNAC8AMgAwADAANwAvADAAMwAvAFAAbABhAHkAUgBlAGEAZAB5AEgAZQBhAGQAZQByACIAIAB2AGUAcgBzAGkAbwBuAD0AIgA0AC4AMAAuADAALgAwACIAPgA8AEQAQQBUAEEAPgA8AFAAUgBPAFQARQBDAFQASQBOAEYATwA+ADwASwBFAFkATABFAE4APgAxADYAPAAvAEsARQBZAEwARQBOAD4APABBAEwARwBJAEQAPgBBAEUAUwBDAFQAUgA8AC8AQQBMAEcASQBEAD4APAAvAFAAUgBPAFQARQBDAFQASQBOAEYATwA+ADwASwBJAEQAPgB1ADIAcABuADYAegBUAEwAbABsADYANwB6ADIARgBtAE0AUABHAGoAMgBnAD0APQA8AC8ASwBJAEQAPgA8AEMASABFAEMASwBTAFUATQA+AE4ANABRAHkAYwBZAE4AegBOAHgAWQA9ADwALwBDAEgARQBDAEsAUwBVAE0APgA8AEwAQQBfAFUAUgBMAD4AaAB0AHQAcAA6AC8ALwBwAGwAYQB5AHIAZQBhAGQAeQAuAGQAaQByAGUAYwB0AHQAYQBwAHMALgBuAGUAdAAvAHAAcgAvAHMAdgBjAC8AcgBpAGcAaAB0AHMAbQBhAG4AYQBnAGUAcgAuAGEAcwBtAHgAPwBQAGwAYQB5AFIAaQBnAGgAdAA9ADEAJgBhAG0AcAA7AEMAbwBuAHQAZQBuAHQASwBlAHkAPQBFAEEAdABzAEkASgBRAFAAZAA1AHAARgBpAFIAVQByAFYAOQBMAGEAeQB3AD0APQA8AC8ATABBAF8AVQBSAEwAPgA8AC8ARABBAFQAQQA+ADwALwBXAFIATQBIAEUAQQBEAEUAUgA+AA=='
   );
 
-  const widevine = list[1];
+  const widevine = info.psshList[1];
   expect(widevine.version).toBe(0);
   expect(widevine.systemId).toBe('edef8ba9-79d6-4ace-a3c8-27dcd51d21ed');
   expect(widevine.pssh).toBe(

@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { decryptFile } from '../dempeg';
+import { decryptFile } from '../../dempeg';
 
 export const $ = async (strings: TemplateStringsArray, ...values: string[]) => {
   const command = strings.reduce((acc, curr, i) => acc + curr + (values[i] || ''), '');

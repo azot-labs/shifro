@@ -1,8 +1,8 @@
-import { Mp4Parser } from './core/parser';
-import { parseSencBox, type ParsedSenc } from './box/senc';
-import { parseTrunBox, type ParsedTrun } from './box/trun';
-import { parseTfhdBox, type ParsedTfhd } from './box/tfhd';
-import { decryptInitChunk, isInitializationSegment } from './initialization';
+import { Mp4Parser } from './parser';
+import { parseSencBox, type ParsedSenc } from './parsing/senc';
+import { parseTrunBox, type ParsedTrun } from './parsing/trun';
+import { parseTfhdBox, type ParsedTfhd } from './parsing/tfhd';
+import { processInit, isInitData } from './initialization';
 
 export type EncryptionScheme = 'cenc' | 'cbcs';
 
@@ -18,8 +18,8 @@ export type SubsampleParams = {
 export type SubsampleHandler = (params: SubsampleParams) => Promise<Buffer | null>;
 
 const processEncryptedSegment = async (segment: Buffer, subsampleHandler: SubsampleHandler) => {
-  const isInit = isInitializationSegment(segment);
-  if (isInit) return decryptInitChunk(segment);
+  const isInit = isInitData(segment);
+  if (isInit) return processInit(segment);
 
   let sencInfo!: ParsedSenc;
   let trunInfo!: ParsedTrun;

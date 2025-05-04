@@ -1,4 +1,4 @@
-import { DataViewReader } from '../core/data-view-reader';
+import { DataViewReader } from '../data-view-reader';
 
 export const visualSampleEntry = (reader: DataViewReader) => {
   // Skip 6 reserved bytes.

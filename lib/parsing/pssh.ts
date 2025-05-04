@@ -1,4 +1,4 @@
-import { ParsedBox } from '../core/parser';
+import { ParsedBox } from '../parser';
 
 // Protection System Specific Header (PSSH)
 export const parsePsshBox = (box: ParsedBox) => {

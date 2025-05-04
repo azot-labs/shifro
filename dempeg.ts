@@ -3,8 +3,8 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import { Readable, Writable } from 'node:stream';
 import { processStream } from './lib/stream';
 import { EncryptionScheme, processEncryptedSegment, type SubsampleHandler, type SubsampleParams } from './lib/process';
-import { $ } from './lib/shell';
-import { getHash } from './lib/hash';
+import { $ } from './lib/node/shell';
+import { getHash } from './lib/node/utils';
 
 export const decryptWithKey = async (key: Buffer, params: SubsampleParams) => {
   const scheme = params.encryptionScheme;

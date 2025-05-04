@@ -1,7 +1,7 @@
-import { Mp4Parser } from './core/parser';
+import { Mp4Parser } from './parser';
 import { getEncryptionScheme } from './parser/scheme';
 import { EncryptionScheme, processEncryptedSegment, SubsampleHandler, SubsampleParams } from './process';
-import { isInitializationSegment, decryptInitChunk } from './initialization';
+import { isInitData, processInit } from './initialization';
 
 class Mp4SegmentTransformer {
   private buffer: Buffer = Buffer.alloc(0);
@@ -27,8 +27,8 @@ class Mp4SegmentTransformer {
 
           const initSegment = this.buffer.subarray(0, moovEnd);
           this.scheme = await getEncryptionScheme(initSegment);
-          if (isInitializationSegment(initSegment)) {
-            const processedInit = await decryptInitChunk(initSegment);
+          if (isInitData(initSegment)) {
+            const processedInit = await processInit(initSegment);
             controller.enqueue(processedInit);
             this.buffer = this.buffer.subarray(moovEnd);
             this.isProcessingInit = false;
