@@ -26,10 +26,10 @@ const [input, output] = args.positionals;
     // Show help
     console.log(
       `
-  dempeg version ${packageJson.version}
+  shifro version ${packageJson.version}
   (c) 2024 Vitaly Gashkov <vitalygashkov@vk.com>
 
-  Usage: dempeg [options] <input> <output>
+  Usage: shifro [options] <input> <output>
 
   Options:
     --key <id>:<k>
