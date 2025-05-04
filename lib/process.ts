@@ -15,7 +15,7 @@ export type SubsampleParams = {
   timestamp: number;
 };
 
-export type SubsampleHandler = (params: SubsampleParams) => Promise<Buffer | null>;
+export type SubsampleHandler = (params: SubsampleParams) => Promise<Uint8Array | null>;
 
 const processEncryptedSegment = async (segment: Buffer, subsampleHandler: SubsampleHandler) => {
   const isInit = isInitData(segment);
@@ -93,7 +93,7 @@ const processEncryptedSegment = async (segment: Buffer, subsampleHandler: Subsam
         // Reconstruct the sample with clear and decrypted parts
         offset = 0;
         let decryptedOffset = 0;
-        const decryptedSampleParts: Buffer[] = [];
+        const decryptedSampleParts: Uint8Array[] = [];
 
         for (const subsample of sencSample.subsamples) {
           if (subsample.bytesOfClearData > 0) {

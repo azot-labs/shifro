@@ -1,4 +1,4 @@
-import { bufferReplaceAll } from './node/buffer';
+import { bufferReplaceAll } from './buffer';
 import { Mp4Parser } from './parser';
 import { parseTencBox } from './parsing/tenc';
 import { parsePsshBox } from './parsing/pssh';
