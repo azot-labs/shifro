@@ -33,6 +33,8 @@ export const decryptFile = async (
   const outputNodeStream = createWriteStream(outputPath);
   const outputWebStream = Writable.toWeb(outputNodeStream);
 
+  console.time('\nDone!');
+
   await decryptStream(inputWebStream, outputWebStream, {
     key: 'key' in params ? params.key : '',
     keyId: params.keyId,
@@ -44,5 +46,5 @@ export const decryptFile = async (
     },
   });
 
-  console.log('\nDone!');
+  console.timeEnd('\nDone!');
 };
