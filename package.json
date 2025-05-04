@@ -6,7 +6,8 @@
     "dist"
   ],
   "scripts": {
-    "dev": "vite",
+    "start": "node ./dist/cli.cjs",
+    "web": "vite",
     "build": "npm run build:lib && npm run build:cli",
     "build:cli": "tsdown ./lib/node/cli.ts --format cjs --dts --minify --no-clean",
     "build:lib": "tsdown shifro.ts --format cjs --format esm --dts --minify",
