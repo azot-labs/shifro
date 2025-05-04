@@ -6,7 +6,7 @@ export interface SencSubsample {
 }
 
 export interface SencSample {
-  iv: Buffer;
+  iv: Uint8Array;
   subsamples: SencSubsample[];
 }
 
@@ -24,7 +24,7 @@ export const parseSencBox = (reader: DataViewReader, flags: number | null): Pars
   const samples: ParsedSenc['samples'] = [];
   for (let i = 0; i < sampleCount; i++) {
     const ivSize = 8;
-    const iv = Buffer.alloc(16);
+    const iv = new Uint8Array(16);
     iv.set(reader.readBytes(ivSize));
     const sample: ParsedSenc['samples'][number] = { iv, subsamples: [] };
     const hasSubsamples = flags && flags & 2;

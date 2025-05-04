@@ -147,6 +147,16 @@ const writeUint8Array = (target: Uint8Array, str: string, offset: number = 0, ma
   return bytesToWrite;
 };
 
+const toHex = (data: Uint8Array) =>
+  Array.from(data)
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+
+const toBase64 = (data: Uint8Array) => {
+  const binString = Array.from(data, (byte) => String.fromCodePoint(byte)).join('');
+  return btoa(binString);
+};
+
 export {
   bufferReplaceAll,
   bitShiftLeftBuffer,
@@ -156,4 +166,6 @@ export {
   concatUint8Array,
   copyUint8Array,
   writeUint8Array,
+  toHex,
+  toBase64,
 };

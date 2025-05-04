@@ -1,3 +1,4 @@
+import { toBase64, toHex } from '../buffer';
 import { ParsedBox } from '../parser';
 
 // Protection System Specific Header (PSSH)
@@ -6,7 +7,7 @@ export const parsePsshBox = (box: ParsedBox) => {
   const version = box.version ?? 0;
   if (version !== 0 && version !== 1) throw new Error('PSSH version can only be 0 or 1');
   const systemIdBytes = box.reader.readBytes(16);
-  const systemIdHex = Buffer.from(systemIdBytes).toString('hex');
+  const systemIdHex = toHex(systemIdBytes);
   const systemIdUuid = [
     systemIdHex.slice(0, 8),
     systemIdHex.slice(8, 12),
@@ -17,13 +18,13 @@ export const parsePsshBox = (box: ParsedBox) => {
 
   const dataView = box.reader.getDataView();
   const pssh = new Uint8Array(dataView.buffer, dataView.byteOffset - 12, box.size);
-  const psshBase64 = Buffer.from(pssh).toString('base64');
+  const psshBase64 = toBase64(pssh);
 
   const keyIds: string[] = [];
   if (version >= 1) {
     const kidCount = box.reader.readUint32();
     for (let i = 0; i < kidCount; i++) {
-      keyIds.push(Buffer.from(box.reader.readBytes(16)).toString('hex'));
+      keyIds.push(toHex(box.reader.readBytes(16)));
     }
   }
 
