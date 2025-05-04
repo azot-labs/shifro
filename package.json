@@ -8,7 +8,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown dempeg.ts ./lib/cli.ts --format cjs --target node20 --dts --minify",
+    "dev": "vite",
+    "build": "tsdown dempeg.ts ./lib/cli.ts --format cjs --format esm --dts --minify",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "prepublishOnly": "npm run build"

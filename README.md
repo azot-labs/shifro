@@ -5,7 +5,7 @@ A lightweight, dependency-free MP4 decrypter for Node.js.
 ## Features
 
 - **Decryption** of MP4 files with MPEG Common Encryption (CENC)
-- **Small** size (~10kB without types)
+- **Small** size (under 15kB without types, minified)
 - **Command-line** interface
 - **Segment-by-segment processing** with JavaScript library
 - **Custom handler** for subsample processing
