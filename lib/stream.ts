@@ -82,5 +82,5 @@ export const processStream = async (
     transform: (chunk, controller) => transformer.transform(chunk, controller),
     flush: (controller) => transformer.flush(controller),
   });
-  await readable.pipeThrough(transform).pipeTo(writable);
+  await readable.pipeThrough(transform).pipeTo(writable, { preventClose: true });
 };

@@ -2,29 +2,30 @@ import { createDecipheriv } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { Readable, Writable } from 'node:stream';
 import { processStream } from './lib/stream';
-import { processEncryptedSegment, type SubsampleHandler, type SubsampleParams } from './lib/process';
+import { EncryptionScheme, processEncryptedSegment, type SubsampleHandler, type SubsampleParams } from './lib/process';
 import { $ } from './lib/shell';
 import { getHash } from './lib/hash';
 
-const decryptWithKey = async (key: Buffer, params: SubsampleParams) => {
-  if (params.encryptionScheme === 'cenc') {
-    const decipher = createDecipheriv('aes-128-ctr', key, params.iv);
-    decipher.setAutoPadding(false); // CTR is a stream cipher, no padding needed
-    const decrypted = Buffer.concat([decipher.update(params.data), decipher.final()]);
-    return decrypted;
-  } else if (params.encryptionScheme === 'cbcs') {
+export const decryptWithKey = async (key: Buffer, params: SubsampleParams) => {
+  const scheme = params.encryptionScheme;
+  if (scheme === 'cbcs') {
     const decipher = createDecipheriv('aes-128-cbc', key, params.iv);
     decipher.setAutoPadding(false); // Padding is handled by the CENC/CBCS spec, not the block cipher mode
     const decrypted = Buffer.concat([decipher.update(params.data), decipher.final()]);
     return decrypted;
   } else {
-    return params.data;
+    // Default to CENC
+    const decipher = createDecipheriv('aes-128-ctr', key, params.iv);
+    decipher.setAutoPadding(false); // CTR is a stream cipher, no padding needed
+    const decrypted = Buffer.concat([decipher.update(params.data), decipher.final()]);
+    return decrypted;
   }
 };
 
 type DecryptWithKey = {
   key: string;
   keyId?: string;
+  encryptionScheme?: EncryptionScheme;
 };
 
 type DecryptWithCallback = {
@@ -37,7 +38,11 @@ type DecryptParams = DecryptWithKey | DecryptWithCallback;
 const decryptSegment = async (segment: Buffer, params: DecryptParams) => {
   const hasKey = 'key' in params;
   const key = Buffer.from(hasKey ? params.key : '', 'hex');
-  const decryptFn = async (params: SubsampleParams) => decryptWithKey(key, params);
+  const decryptFn = async (subsampleParams: SubsampleParams) =>
+    decryptWithKey(key, {
+      encryptionScheme: 'encryptionScheme' in params ? params.encryptionScheme : undefined,
+      ...subsampleParams,
+    });
   const transformSubsampleData = hasKey ? decryptFn : params.transformSubsampleData;
   return processEncryptedSegment(segment, transformSubsampleData);
 };
