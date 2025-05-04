@@ -3,6 +3,37 @@ import { EncryptionScheme, processEncryptedSegment, SubsampleHandler, SubsampleP
 import { isInitData, parseInit, processInit } from './initialization';
 import { concatUint8Array } from './buffer';
 
+const findInit = (buffer: Uint8Array) => {
+  let moovEnd: number | null = null;
+  new Mp4Parser()
+    .box('moov', (box) => {
+      moovEnd = box.start + box.size;
+    })
+    .parse(buffer, true, true);
+  const init = moovEnd ? buffer.subarray(0, moovEnd) : null;
+  return { moovEnd, init };
+};
+
+const findSegment = (buffer: Uint8Array) => {
+  let moofStart: number | null = null;
+  let mdatEnd: number | null = null;
+
+  new Mp4Parser()
+    .box('moof', (box) => {
+      if (moofStart === null) moofStart = box.start;
+    })
+    .box('mdat', (box) => {
+      if (mdatEnd === null) mdatEnd = box.start + box.size;
+    })
+    .parse(buffer, true, true);
+
+  const hasSegment = moofStart !== null && mdatEnd !== null;
+
+  const segment = hasSegment ? buffer.subarray(moofStart!, mdatEnd!) : null;
+
+  return { segment, moofStart, mdatEnd };
+};
+
 class Mp4SegmentTransformer {
   private buffer = new Uint8Array();
   private isProcessingInit = true;
@@ -14,23 +45,17 @@ class Mp4SegmentTransformer {
     try {
       this.buffer = concatUint8Array([this.buffer, chunk]);
 
-      while (this.buffer.length >= 8) {
+      let shouldContinue = true;
+      while (shouldContinue) {
         if (this.isProcessingInit) {
-          let moovEnd: number | null = null;
-          new Mp4Parser()
-            .box('moov', (box) => {
-              moovEnd = box.start + box.size;
-            })
-            .parse(this.buffer, true, true);
-
-          if (!moovEnd) break;
-
-          const initSegment = this.buffer.subarray(0, moovEnd);
-          const initInfo = parseInit(initSegment);
-          this.scheme = initInfo.schemeType;
-
-          if (isInitData(initSegment)) {
-            const processedInit = await processInit(initSegment);
+          const { init, moovEnd } = findInit(this.buffer);
+          if (!moovEnd || this.buffer.length < moovEnd) {
+            break;
+          }
+          if (init && moovEnd && isInitData(init)) {
+            const initInfo = parseInit(init);
+            this.scheme = initInfo.schemeType;
+            const processedInit = await processInit(init);
             controller.enqueue(processedInit);
             this.buffer = this.buffer.subarray(moovEnd);
             this.isProcessingInit = false;
@@ -38,29 +63,21 @@ class Mp4SegmentTransformer {
           }
         }
 
-        let moofStart: number | null = null;
-        let mdatEnd: number | null = null;
+        const { moofStart, mdatEnd, segment } = findSegment(this.buffer);
 
-        new Mp4Parser()
-          .box('moof', (box) => {
-            if (moofStart === null) moofStart = box.start;
-          })
-          .box('mdat', (box) => {
-            if (mdatEnd === null) mdatEnd = box.start + box.size;
-          })
-          .parse(this.buffer, true, true);
+        if (moofStart === null || mdatEnd === null || !segment || this.buffer.length < mdatEnd) {
+          break;
+        }
 
-        if (moofStart === null || mdatEnd === null) break;
-
-        const segmentBuffer = this.buffer.subarray(moofStart, mdatEnd);
         const onSubsampleData = (params: SubsampleParams) => {
           params.encryptionScheme = this.scheme as EncryptionScheme;
           return this.options.subsampleHandler(params);
         };
+        const processedSegment = await processEncryptedSegment(segment, onSubsampleData);
 
-        const processedSegment = await processEncryptedSegment(segmentBuffer, onSubsampleData);
         controller.enqueue(processedSegment);
         this.buffer = this.buffer.subarray(mdatEnd);
+        shouldContinue = this.buffer.length >= 8;
       }
     } catch (error) {
       controller.error(error);
