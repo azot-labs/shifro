@@ -43,4 +43,6 @@ export const decryptFile = async (
       }
     },
   });
+
+  console.log('\nDone!');
 };

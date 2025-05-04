@@ -21,7 +21,6 @@ const [input, output] = args.positionals;
 (async () => {
   if (input && output && keyId && keyValue) {
     await decryptFile(input, output, { key: keyValue, keyId });
-    console.log('Done!');
   } else {
     // Show help
     console.log(
