@@ -157,7 +157,7 @@ const toBase64 = (data: Uint8Array) => {
   return btoa(binString);
 };
 
-const parseHex = (hex: string) => hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16));
+const parseHex = (hex: string) => hex.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) ?? [];
 
 export {
   bufferReplaceAll,
