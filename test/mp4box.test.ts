@@ -9,35 +9,6 @@ import { concatUint8Array, parseHex } from '../lib/buffer';
 import { decryptWithKey } from '../shifro';
 import { getHash } from '../lib/node/utils';
 
-export async function getFileRange(path: string, progress: (data: MP4BoxBuffer) => void, start = 0, end = Infinity) {
-  const reader = fs.createReadStream(path, { start, end });
-  return new Promise<void>((resolve, reject) => {
-    let bytesRead = 0;
-    reader.on('data', (chunk: string | Buffer) => {
-      if (typeof chunk === 'string') chunk = Buffer.from(chunk);
-      const data = MP4BoxBuffer.fromArrayBuffer(chunk.buffer, start + bytesRead);
-      bytesRead += chunk.length;
-      progress(data);
-    });
-    reader.on('error', reject);
-    reader.on('end', resolve);
-  });
-}
-
-export async function loadAndGetInfo(file_path: string, loadAll = false, keepMdat = false) {
-  const mp4 = createFile(keepMdat);
-  const ready = new Promise<Movie>((resolve) => {
-    mp4.onReady = resolve;
-  });
-
-  const populate = getFileRange(file_path, (data) => mp4.appendBuffer(data))
-    .then(() => mp4.flush())
-    .then(() => mp4.getInfo());
-
-  if (loadAll) await populate;
-  return { info: await Promise.race([ready, populate]), mp4 };
-}
-
 function getSencForMoofNumber(mp4: ISOFile, num: number) {
   const tenc = mp4.getBox('tenc');
   const isProtected = tenc.default_isProtected;
@@ -76,13 +47,36 @@ function getSencForMoofNumber(mp4: ISOFile, num: number) {
 }
 
 test('reading with mp4box', async () => {
-  const { info, mp4 } = await loadAndGetInfo(ASSET_DATA.inputPath, true, true);
+  const keepMdatData = true;
+  const mp4 = createFile(keepMdatData);
+  if (fs.existsSync(ASSET_DATA.outputPath)) fs.unlinkSync(ASSET_DATA.outputPath);
+  const readStream = fs.createReadStream(ASSET_DATA.inputPath);
+
+  let bytesRead = 0;
+
+  readStream.on('data', (chunk: string | Buffer) => {
+    if (typeof chunk === 'string') chunk = Buffer.from(chunk);
+    const data = MP4BoxBuffer.fromArrayBuffer(chunk.buffer, bytesRead);
+    mp4.appendBuffer(data);
+    bytesRead += chunk.length;
+  });
+
+  readStream.on('end', () => {
+    mp4.flush();
+  });
+
+  const ready = new Promise<Movie>((resolve) => {
+    mp4.onReady = resolve;
+  });
+
+  const info = await ready;
 
   const totalSamples = info.tracks[0].nb_samples;
   mp4.setExtractionOptions(1, undefined, { nbSamples: totalSamples });
 
   const extractedSamples: Sample[] = [];
 
+  // TODO: Use writeStream to write to file
   fs.copyFileSync(ASSET_DATA.inputPath, ASSET_DATA.outputPath); // start off with a copy of the input file
   const outfile = fs.openSync(ASSET_DATA.outputPath, 'r+');
 
