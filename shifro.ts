@@ -53,3 +53,4 @@ const decryptStream = async (
 
 export type { TransformSampleParams, ProcessStreamOptions };
 export { decryptSegment, decryptStream };
+export * from './lib/api';
