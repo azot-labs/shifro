@@ -83,3 +83,8 @@ async function main() {
 ```bash
 shifro --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb ./input.mp4 ./output.mp4
 ```
+
+## Credits
+
+- [mp4box.js](https://github.com/gpac/mp4box.js)
+- [mediabunny](https://github.com/Vanilagy/mediabunny)
