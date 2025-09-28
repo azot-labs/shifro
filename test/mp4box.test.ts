@@ -97,28 +97,23 @@ async function decrypt(params: { inputPath: string; outputPath: string; key: str
   const initStream = new DataStream();
   const ftyp = outputMp4.ftyp;
   const moov = outputMp4.moov;
-  const frma = mp4.getBox('frma');
-  const stsd = outputMp4.moov.traks[0].mdia.minf.stbl.stsd;
-  const encv = outputMp4.getBox('encv');
-  const encvData = outputMp4.stream.dataView.buffer.slice(encv.start, encv.start! + encv.size);
-  const avc1 = new BoxParser.sampleEntry.avc1();
-  avc1.parse(new MultiBufferStream(MP4BoxBuffer.fromArrayBuffer(encvData, 0)));
-  avc1.data_reference_index = encv.data_reference_index;
-  avc1.width = encv.width;
-  avc1.height = encv.height;
-  avc1.horizresolution = encv.horizresolution;
-  avc1.vertresolution = encv.vertresolution;
-  avc1.frame_count = encv.frame_count;
-  avc1.compressorname = '';
-  avc1.depth = encv.depth;
-  for (const box of encv.boxes ?? []) {
-    if (box.box_name === 'ProtectionSchemeInfoBox') continue;
-    avc1.addBox(box);
+  const trak = moov.traks[0];
+  const stsd = trak.mdia.minf.stbl.stsd;
+  type EncSampleEntry = ReturnType<typeof mp4.getBox<'encv'>>;
+  const encSampleEntry = stsd.entries?.find((box) =>
+    box.constructor.name.startsWith('enc')
+  ) as unknown as EncSampleEntry;
+  const sinf = encSampleEntry.sinf as ReturnType<typeof mp4.getBox<'sinf'>>;
+  const frma = sinf.frma as ReturnType<typeof mp4.getBox<'frma'>>;
+  const decSampleEntry: ReturnType<typeof mp4.getBox<'avc1'>> = new BoxParser.sampleEntry[frma.data_format]();
+  for (const key of Object.keys(encSampleEntry)) {
+    decSampleEntry.set(key, encSampleEntry[key]);
   }
-  stsd.addEntry(avc1);
-  stsd.entries = stsd.entries?.filter((box) => box.constructor.name !== 'encvSampleEntry');
-  outputMp4.moov.psshs = [];
-  outputMp4.moov.boxes = outputMp4.moov.boxes?.filter((box) => box.box_name !== 'ProtectionSystemSpecificHeaderBox');
+  decSampleEntry.boxes = decSampleEntry.boxes?.filter((box) => box.box_name !== 'ProtectionSchemeInfoBox');
+  stsd.addEntry(decSampleEntry);
+  stsd.entries = stsd.entries?.filter((box) => !box.constructor.name.startsWith('enc')); // Remove encvSampleEntry, etc.
+  moov.psshs = [];
+  moov.boxes = outputMp4.moov.boxes?.filter((box) => box.box_name !== 'ProtectionSystemSpecificHeaderBox');
   ftyp.write(initStream);
   moov.write(initStream);
   const initData = initStream.buffer;
@@ -132,8 +127,6 @@ async function decrypt(params: { inputPath: string; outputPath: string; key: str
   let segmentCount = 0;
 
   mp4.onSamples = async (id, user, samples) => {
-    console.log(`onSamples: ${samples.length}`);
-
     let moof = mp4.moofs[samples[0].moof_number! - 1];
     let traf = moof.trafs[0];
     let trun = traf.truns[0];
@@ -173,7 +166,7 @@ async function decrypt(params: { inputPath: string; outputPath: string; key: str
       }
       const decrypted_sample = Buffer.concat(decrypted_sample_parts);
 
-      sample.description = avc1;
+      sample.description = decSampleEntry;
       sample.data = decrypted_sample;
       sample.size = decrypted_sample.byteLength;
 
