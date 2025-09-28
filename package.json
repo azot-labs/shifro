@@ -9,8 +9,8 @@
     "start": "node ./dist/cli.cjs",
     "web": "vite",
     "build": "npm run build:lib && npm run build:cli",
-    "build:cli": "tsdown ./lib/node/cli.ts --format cjs --dts --minify --no-clean",
-    "build:lib": "tsdown shifro.ts --format cjs --format esm --dts --platform neutral",
+    "build:cli": "tsdown ./src/cli.ts --format cjs --dts --no-clean",
+    "build:lib": "tsdown ./src/index.ts --format cjs --format esm --dts --platform neutral",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "prepublishOnly": "npm run build"
@@ -19,23 +19,23 @@
     "shifro": "./dist/cli.cjs"
   },
   "type": "module",
-  "main": "./dist/shifro.js",
-  "types": "./dist/shifro.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "require": {
-        "types": "./dist/shifro.d.cts",
-        "default": "./dist/shifro.cjs"
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       },
       "import": {
-        "types": "./dist/shifro.d.ts",
-        "default": "./dist/shifro.js"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       }
     }
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/streamyx-labs/shifro.git"
+    "url": "git+https://github.com/azot-labs/shifro.git"
   },
   "keywords": [
     "mp4",
@@ -54,7 +54,7 @@
     "shaka-packager"
   ],
   "bugs": {
-    "url": "https://github.com/streamyx-labs/shifro/issues",
+    "url": "https://github.com/azot-labs/shifro/issues",
     "email": "vitalygashkov@vk.com"
   },
   "author": "Vitaly Gashkov <vitalygashkov@vk.com>",

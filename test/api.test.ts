@@ -1,8 +1,7 @@
 import fs from 'node:fs';
 import { expect, test } from 'vitest';
-import { Input, FilePathSource, Output, FilePathTarget, Decryption } from '../lib/api';
-import { ASSET_DATA } from './utils';
-import { getHash } from '../lib/node/utils';
+import { ASSET_DATA, getHash } from './utils';
+import { Input, FilePathSource, Output, FilePathTarget, Decryption } from '../src/api';
 
 test('decrypting with new api', async () => {
   if (fs.existsSync(ASSET_DATA.outputPath)) fs.unlinkSync(ASSET_DATA.outputPath);

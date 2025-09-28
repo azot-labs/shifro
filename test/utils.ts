@@ -1,4 +1,5 @@
 import { createReadStream, type PathLike } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 export const readFirstNBytes = async (path: PathLike, n: number = 1 * 1024 * 1024): Promise<Buffer> => {
   const chunks: Buffer[] = [];
@@ -7,6 +8,15 @@ export const readFirstNBytes = async (path: PathLike, n: number = 1 * 1024 * 102
   }
   return Buffer.concat(chunks);
 };
+
+export const getHash = (path: string) =>
+  new Promise((resolve, reject) => {
+    const hash = createHash('sha256');
+    const rs = createReadStream(path);
+    rs.on('error', reject);
+    rs.on('data', (chunk) => hash.update(chunk));
+    rs.on('end', () => resolve(hash.digest('hex')));
+  });
 
 export const ASSET_DATA = {
   url: 'https://bitmovin.com/demos/drm',

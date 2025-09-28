@@ -1,9 +1,7 @@
 import { concatUint8Array, parseHex } from './buffer';
-import { DecryptStream } from './decrypt-stream';
-import { TransformSampleParams } from './process';
-import { decryptWithKey } from '../shifro';
-
-import * as nodeAlias from './node/exports';
+import { DecryptStream, TransformSampleParams } from './stream';
+import { decrypt } from './crypto';
+import * as nodeAlias from './node';
 
 const node =
   typeof nodeAlias !== 'undefined'
@@ -115,9 +113,22 @@ export class Decryption {
   constructor(options: DecryptionOptions) {
     this.input = options.input;
     this.output = options.output;
+
     const key = new Uint8Array(parseHex(options.keys[0].key));
-    const decryptFn = async (params: TransformSampleParams) => decryptWithKey(key, params);
-    this.decrypt = new DecryptStream({ transformSample: decryptFn, onProgress: options.onProgress });
+
+    const decryptFn = async ({ iv, data, encryptionScheme }: TransformSampleParams) => {
+      if (encryptionScheme === 'cbcs') {
+        return decrypt({ key, iv, data, algorithm: 'AES-CBC' });
+      } else {
+        // CENC
+        return decrypt({ key, iv, data, algorithm: 'AES-CTR' });
+      }
+    };
+
+    this.decrypt = new DecryptStream({
+      transformSample: decryptFn,
+      onProgress: options.onProgress,
+    });
   }
 
   async #init() {}

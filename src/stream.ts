@@ -1,7 +1,19 @@
 import { BoxParser, createFile, DataStream, ISOFile, Movie, MP4BoxBuffer, MultiBufferStream, Sample } from 'mp4box';
 import { concatUint8Array } from './buffer';
-import { TransformSampleFn } from './process';
 import { DataViewReader } from './data-view-reader';
+
+export type EncryptionScheme = 'cenc' | 'cbcs';
+
+export type TransformSampleParams = {
+  encryptionScheme?: EncryptionScheme;
+  data: Uint8Array;
+  // Initialization Vector (IV) of sample
+  iv: Uint8Array;
+  // Presentation timestamp (PTS) of sample in the media timeline
+  timestamp: number;
+};
+
+export type TransformSampleFn = (params: TransformSampleParams) => Promise<Uint8Array | null>;
 
 function getSencForMoofNumber(mp4: ISOFile, num: number) {
   const tenc = mp4.getBox('tenc');
