@@ -25,16 +25,16 @@ const [input, output] = args.positionals;
     // Show help
     console.log(
       `
-  shifro version ${packageJson.version}
-  (c) 2024-2025 Vitaly Gashkov <vitalygashkov@vk.com>
+${packageJson.name} version ${packageJson.version}
+(c) 2024-2025 ${packageJson.author}
 
-  Usage: shifro [options] <input> <output>
+Usage: ${packageJson.name} [options] <input> <output>
 
-  Options:
-    --key <id>:<k>
-      <id> is either a track ID in decimal or a 128-bit KID in hex,
-      <k> is a 128-bit key in hex
-      (several --key options can be used, one for each track or KID)
+Options:
+  --key <id>:<k>
+    <id> is either a track ID in decimal or a 128-bit KID in hex,
+    <k> is a 128-bit key in hex
+    (several --key options can be used, one for each track or KID)
       `.trim()
     );
   }
