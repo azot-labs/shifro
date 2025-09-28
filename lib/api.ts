@@ -94,7 +94,12 @@ export class Output {
   }
 }
 
-export type DecryptionOptions = { input: Input; output: Output; keys: { kid?: string; key: string }[] };
+export type DecryptionOptions = {
+  input: Input;
+  output: Output;
+  keys: { kid?: string; key: string }[];
+  onProgress?: (bytesProcessed: number) => void;
+};
 
 export class Decryption {
   private decrypt: DecryptStream;
@@ -112,7 +117,7 @@ export class Decryption {
     this.output = options.output;
     const key = new Uint8Array(parseHex(options.keys[0].key));
     const decryptFn = async (params: TransformSampleParams) => decryptWithKey(key, params);
-    this.decrypt = new DecryptStream({ transformSample: decryptFn });
+    this.decrypt = new DecryptStream({ transformSample: decryptFn, onProgress: options.onProgress });
   }
 
   async #init() {}
