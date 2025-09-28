@@ -1,7 +1,7 @@
 {
   "name": "shifro",
   "version": "0.2.0",
-  "description": "A lightweight, dependency-free MP4 decrypter",
+  "description": "A lightweight library for decrypting MP4 files, directly in the browser",
   "files": [
     "dist"
   ],
@@ -67,13 +67,13 @@
     }
   ],
   "engines": {
-    "node": "20 || 21 || 22 || 23"
+    "node": ">=20"
   },
   "devDependencies": {
-    "@types/node": "^22.15.3",
-    "tsdown": "^0.11.0-beta.3",
-    "typescript": "^5.8.3",
-    "vitest": "^3.1.2"
+    "@types/node": "^24.5.2",
+    "tsdown": "^0.15.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "mp4box": "^2.1.1"
