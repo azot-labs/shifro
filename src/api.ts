@@ -114,6 +114,7 @@ export class Decryption {
     this.input = options.input;
     this.output = options.output;
 
+    // TODO: Support multiple keys
     const key = new Uint8Array(parseHex(options.keys[0].key));
 
     const decryptFn = async ({ iv, data, encryptionScheme }: TransformSampleParams) => {

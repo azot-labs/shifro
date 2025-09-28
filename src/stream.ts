@@ -77,6 +77,7 @@ class DecryptTransformer {
     });
 
     this.inputReady.then((info) => {
+      // TODO: Handle multiple tracks
       const track = info.tracks[0];
       const totalSamples = track.nb_samples;
       this.input.setExtractionOptions(track.id, undefined, { nbSamples: totalSamples });
@@ -143,8 +144,9 @@ class DecryptTransformer {
       const transformResult = await this.options.transformSample?.({
         data: encryptedData,
         iv: sencSample.InitializationVector,
-        timestamp: sample.cts!,
-        encryptionScheme: 'cenc',
+        timestamp: sample.cts!, // TODO: Check if this is correct
+        encryptionScheme: 'cenc', // TODO: Set real encryption scheme
+        // TODO: Also pass default KID so transformSample can check matching KID if multiple keys are provided
       });
       const decrypted = transformResult!;
 
