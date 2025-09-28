@@ -1,12 +1,23 @@
-import { BoxParser, createFile, DataStream, ISOFile, Movie, MP4BoxBuffer, MultiBufferStream, Sample } from 'mp4box';
+import {
+  createFile,
+  BoxParser,
+  DataStream,
+  ISOFile,
+  Movie,
+  MP4BoxBuffer,
+  MultiBufferStream,
+  Sample,
+  AllRegisteredBoxes,
+} from 'mp4box';
 import { concatUint8Array } from './buffer';
 import { DataViewReader } from './data-view-reader';
 
 export type EncryptionScheme = 'cenc' | 'cbcs';
 
 export type TransformSampleParams = {
-  encryptionScheme?: EncryptionScheme;
   data: Uint8Array;
+  encryptionScheme?: EncryptionScheme;
+  kid?: string;
   // Initialization Vector (IV) of sample
   iv: Uint8Array;
   // Presentation timestamp (PTS) of sample in the media timeline
@@ -15,14 +26,29 @@ export type TransformSampleParams = {
 
 export type TransformSampleFn = (params: TransformSampleParams) => Promise<Uint8Array | null>;
 
-function getSencForMoofNumber(mp4: ISOFile, num: number) {
-  const tenc = mp4.getBox('tenc');
-  const isProtected = tenc.default_isProtected;
-  const kid = tenc.default_KID;
-  const perSampleIvSize = tenc.default_Per_Sample_IV_Size;
+type Frma = AllRegisteredBoxes['frma'];
+type Schm = AllRegisteredBoxes['schm'];
+type Schi = AllRegisteredBoxes['schi'] & { tenc: AllRegisteredBoxes['tenc'] };
+type Sinf = AllRegisteredBoxes['sinf'] & { frma: Frma; schm: Schm; schi: Schi };
+type Encv = AllRegisteredBoxes['encv'] & { sinf: Sinf };
 
-  const moof = mp4.moofs[num];
-  const mdat = mp4.mdats[num];
+const getSampleDescription = (sample: Sample) => {
+  const sampleDescription = sample.description as Encv;
+  const sinf = sampleDescription.sinf;
+  const frma = sinf.frma;
+  const dataFormat = frma.data_format;
+  const schm = sinf.schm;
+  const schemeType = schm.scheme_type as 'cenc' | 'cbcs';
+  const schemeVersion = schm.scheme_version;
+  const schi = sinf.schi;
+  const tenc = schi.tenc;
+  const defaultKID = tenc.default_KID;
+  const defaultPerSampleIVSize = tenc.default_Per_Sample_IV_Size;
+  return { dataFormat, schemeType, schemeVersion, defaultKID, defaultPerSampleIVSize };
+};
+
+function getSenc(mp4: ISOFile, moofIndex: number, perSampleIvSize: number) {
+  const moof = mp4.moofs[moofIndex];
   const traf = moof.trafs[0];
   const trun = traf.truns[0];
   const senc = traf.senc; // XXX: is trafs[0] always correct?
@@ -50,7 +76,7 @@ function getSencForMoofNumber(mp4: ISOFile, num: number) {
     senc.samples.push(sample);
   }
 
-  return { moof, mdat, traf, trun, senc };
+  return { moof, traf, trun, senc };
 }
 
 type DecryptTransformerOptions = {
@@ -99,12 +125,12 @@ class DecryptTransformer {
     const moov = this.output.moov;
     const trak = moov.traks[0];
     const stsd = trak.mdia.minf.stbl.stsd;
-    type EncSampleEntry = ReturnType<typeof this.input.getBox<'encv'>>;
-    const encSampleEntry = stsd.entries?.find((box) => !box.box_name) as unknown as EncSampleEntry;
-    const sinf = encSampleEntry.sinf as ReturnType<typeof this.input.getBox<'sinf'>>;
-    const frma = sinf.frma as ReturnType<typeof this.input.getBox<'frma'>>;
-    const decSampleEntry: ReturnType<typeof this.input.getBox<'avc1'>> = new BoxParser.sampleEntry[frma.data_format]();
+    const encSampleEntry = stsd.entries?.find((box) => !box.box_name) as Encv;
+    const sinf = encSampleEntry.sinf;
+    const frma = sinf.frma;
+    const decSampleEntry: AllRegisteredBoxes['avc1'] = new BoxParser.sampleEntry[frma.data_format as 'avc1']();
     for (const key of Object.keys(encSampleEntry)) {
+      // @ts-ignore
       decSampleEntry.set(key, encSampleEntry[key]);
     }
     decSampleEntry.boxes = decSampleEntry.boxes?.filter((box) => box.box_name !== 'ProtectionSchemeInfoBox');
@@ -119,12 +145,13 @@ class DecryptTransformer {
 
   async processSamples(samples: Sample[]) {
     const trackId = samples[0].track_id;
-    let moof = this.input.moofs[samples[0].moof_number! - 1];
-    let traf = moof.trafs[0];
-    let trun = traf.truns[0];
+    const moof = this.input.moofs[samples[0].moof_number! - 1];
+    const traf = moof.trafs[0];
 
     for (const sample of samples) {
-      const { senc } = getSencForMoofNumber(this.input, sample.moof_number! - 1);
+      const { schemeType, defaultKID, defaultPerSampleIVSize } = getSampleDescription(sample);
+      const moofIndex = sample.moof_number! - 1;
+      const { senc } = getSenc(this.input, moofIndex, defaultPerSampleIVSize);
       const sencSample = senc.samples[sample.number_in_traf!];
 
       const encryptedParts = [];
@@ -145,8 +172,8 @@ class DecryptTransformer {
         data: encryptedData,
         iv: sencSample.InitializationVector,
         timestamp: sample.cts!, // TODO: Check if this is correct
-        encryptionScheme: 'cenc', // TODO: Set real encryption scheme
-        // TODO: Also pass default KID so transformSample can check matching KID if multiple keys are provided
+        encryptionScheme: schemeType,
+        kid: defaultKID,
       });
       const decrypted = transformResult!;
 
