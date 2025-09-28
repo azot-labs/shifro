@@ -1,6 +1,6 @@
 # shifro
 
-A lightweight, dependency-free MP4 decrypter
+A lightweight library for decrypting MP4 files, directly in the browser
 
 ## Features
 
@@ -32,32 +32,6 @@ npm install -g shifro
 
 ### Library
 
-#### Decrypting file using Node.js streams
-
-```js
-import { Input, FilePathSource, Output, FilePathTarget, Decryption } from 'shifro';
-
-async function main() {
-  const input = new Input({ source: new FilePathSource('./input.mp4') });
-  const output = new Output({ target: new FilePathTarget('./output.mp4') });
-  const decryption = await Decryption.init({
-    input,
-    output,
-    keys: [
-      {
-        kid: 'eb676abbcb345e96bbcf616630f1a3da',
-        key: '100b6c20940f779a4589152b57d2dacb',
-      },
-    ],
-    onProgress: (progress) => {
-      process.stdout.write(`\rDecrypting... [${progress}/${inputInfo.size}]`);
-      if (progress === inputInfo.size) process.stdout.write('\n');
-    },
-  });
-  await decryption.execute();
-}
-```
-
 #### Decrypting file using browser's Web Streams API
 
 ```js
@@ -88,6 +62,32 @@ async function main() {
       },
     ],
     onProgress: (progress) => console.log(`${progress}/${inputFile.size}`),
+  });
+  await decryption.execute();
+}
+```
+
+#### Decrypting file using Node.js streams
+
+```js
+import { Input, FilePathSource, Output, FilePathTarget, Decryption } from 'shifro';
+
+async function main() {
+  const input = new Input({ source: new FilePathSource('./input.mp4') });
+  const output = new Output({ target: new FilePathTarget('./output.mp4') });
+  const decryption = await Decryption.init({
+    input,
+    output,
+    keys: [
+      {
+        kid: 'eb676abbcb345e96bbcf616630f1a3da',
+        key: '100b6c20940f779a4589152b57d2dacb',
+      },
+    ],
+    onProgress: (progress) => {
+      process.stdout.write(`\rDecrypting... [${progress}/${inputInfo.size}]`);
+      if (progress === inputInfo.size) process.stdout.write('\n');
+    },
   });
   await decryption.execute();
 }
