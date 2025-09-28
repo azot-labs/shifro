@@ -61,7 +61,7 @@ async function main() {
         key: '100b6c20940f779a4589152b57d2dacb',
       },
     ],
-    onProgress: (progress) => console.log(`${progress}/${inputFile.size}`),
+    onProgress: (progress) => console.log(`Decrypting... ${progress}`),
   });
   await decryption.execute();
 }
@@ -84,10 +84,7 @@ async function main() {
         key: '100b6c20940f779a4589152b57d2dacb',
       },
     ],
-    onProgress: (progress) => {
-      process.stdout.write(`\rDecrypting... [${progress}/${inputInfo.size}]`);
-      if (progress === inputInfo.size) process.stdout.write('\n');
-    },
+    onProgress: (progress) => process.stdout.write(`\rDecrypting... [${progress}]`),
   });
   await decryption.execute();
 }
