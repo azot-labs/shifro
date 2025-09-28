@@ -87,9 +87,7 @@ class DecryptTransformer {
     const trak = moov.traks[0];
     const stsd = trak.mdia.minf.stbl.stsd;
     type EncSampleEntry = ReturnType<typeof this.input.getBox<'encv'>>;
-    const encSampleEntry = stsd.entries?.find((box) =>
-      box.constructor.name.startsWith('enc')
-    ) as unknown as EncSampleEntry;
+    const encSampleEntry = stsd.entries?.find((box) => !box.box_name) as unknown as EncSampleEntry;
     const sinf = encSampleEntry.sinf as ReturnType<typeof this.input.getBox<'sinf'>>;
     const frma = sinf.frma as ReturnType<typeof this.input.getBox<'frma'>>;
     const decSampleEntry: ReturnType<typeof this.input.getBox<'avc1'>> = new BoxParser.sampleEntry[frma.data_format]();
@@ -98,7 +96,7 @@ class DecryptTransformer {
     }
     decSampleEntry.boxes = decSampleEntry.boxes?.filter((box) => box.box_name !== 'ProtectionSchemeInfoBox');
     stsd.addEntry(decSampleEntry);
-    stsd.entries = stsd.entries?.filter((box) => !box.constructor.name.startsWith('enc')); // Remove encvSampleEntry, etc.
+    stsd.entries = stsd.entries?.filter((box) => !!box.box_name); // Remove encvSampleEntry, etc.
     moov.psshs = [];
     moov.boxes = this.output.moov.boxes?.filter((box) => box.box_name !== 'ProtectionSystemSpecificHeaderBox');
     ftyp.write(initStream);
