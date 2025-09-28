@@ -8,7 +8,7 @@ A lightweight, dependency-free MP4 decrypter
 - **Small** size (under 15kB without types, minified)
 - **Command-line** interface
 - **Segment-by-segment processing** with JavaScript library
-- **Custom handler** for subsample processing
+- **Custom handler** for samples processing
 
 ## Prerequisites
 
@@ -35,58 +35,62 @@ npm install -g shifro
 #### Decrypting file using Node.js streams
 
 ```js
-import { createWriteStream, createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
-import { Readable, Writable } from 'node:stream';
-import { decryptStream } from 'shifro';
+import { Input, FilePathSource, Output, FilePathTarget, Decryption } from 'shifro';
 
-const key = 'eb676abbcb345e96bbcf616630f1a3da';
-const keyId = '100b6c20940f779a4589152b57d2dacb';
-
-const inputPath = './input.mp4';
-const inputInfo = await stat(inputPath);
-const inputNodeStream = createReadStream(inputPath, { highWaterMark: 1024 * 1024 * 10 });
-const inputWebStream = Readable.toWeb(inputNodeStream);
-
-const outputPath = './output.mp4';
-const outputNodeStream = createWriteStream(outputPath);
-const outputWebStream = Writable.toWeb(outputNodeStream);
-
-await decryptStream(inputWebStream, outputWebStream, {
-  key,
-  keyId,
-  onProgress: (progress) => {
-    process.stdout.write(`\rDecrypting... [${progress}/${inputInfo.size}]`);
-    if (progress === inputInfo.size) process.stdout.write('\n');
-  },
-});
+async function main() {
+  const input = new Input({ source: new FilePathSource('./input.mp4') });
+  const output = new Output({ target: new FilePathTarget('./output.mp4') });
+  const decryption = await Decryption.init({
+    input,
+    output,
+    keys: [
+      {
+        kid: 'eb676abbcb345e96bbcf616630f1a3da',
+        key: '100b6c20940f779a4589152b57d2dacb',
+      },
+    ],
+    onProgress: (progress) => {
+      process.stdout.write(`\rDecrypting... [${progress}/${inputInfo.size}]`);
+      if (progress === inputInfo.size) process.stdout.write('\n');
+    },
+  });
+  await decryption.execute();
+}
 ```
 
 #### Decrypting file using browser's Web Streams API
 
 ```js
-import { decryptStream } from 'shifro';
+import { Input, StreamSource, Output, StreamTarget, Decryption } from 'shifro';
 
-const key = 'eb676abbcb345e96bbcf616630f1a3da';
-const keyId = '100b6c20940f779a4589152b57d2dacb';
-
-const waitForInput = async () =>
+const selectFile = async () =>
   new Promise<File>((resolve) => {
     const input = document.querySelector<HTMLInputElement>('#input')!;
     input.addEventListener('change', () => resolve(input.files![0]));
   });
 
-const inputFile = await waitForInput();
-const inputStream = inputFile.stream();
+async function main() {
+  const inputFile = await selectFile();
+  const inputStream = inputFile.stream();
 
-const outputFileHandle = window.showSaveFilePicker({ suggestedName: 'output.mp4', startIn: 'downloads' });
-const outputStream = await outputFileHandle.createWritable();
+  const outputFileHandle = window.showSaveFilePicker({ suggestedName: 'output.mp4', startIn: 'downloads' });
+  const outputStream = await outputFileHandle.createWritable();
 
-await decryptStream(inputStream, outputStream, {
-  key,
-  keyId,
-  onProgress: (progress) => console.log(`${progress}/${input.size}`),
-});
+  const input = new Input({ source: new StreamSource(inputStream) });
+  const output = new Output({ target: new StreamTarget(outputStream) });
+  const decryption = await Decryption.init({
+    input,
+    output,
+    keys: [
+      {
+        kid: 'eb676abbcb345e96bbcf616630f1a3da',
+        key: '100b6c20940f779a4589152b57d2dacb',
+      },
+    ],
+    onProgress: (progress) => console.log(`${progress}/${inputFile.size}`),
+  });
+  await decryption.execute();
+}
 ```
 
 #### Segment-by-segment decryption
