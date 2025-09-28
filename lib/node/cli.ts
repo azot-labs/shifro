@@ -26,7 +26,7 @@ const [input, output] = args.positionals;
     console.log(
       `
   shifro version ${packageJson.version}
-  (c) 2024 Vitaly Gashkov <vitalygashkov@vk.com>
+  (c) 2024-2025 Vitaly Gashkov <vitalygashkov@vk.com>
 
   Usage: shifro [options] <input> <output>
 
