@@ -10,7 +10,7 @@ import {
   AllRegisteredBoxes,
 } from 'mp4box';
 import { concatUint8Array } from './buffer';
-import { getSampleDescription, getSenc } from './sample';
+import { getSampleDescription, getSenc, type Encv } from './sample';
 
 export type EncryptionScheme = 'cenc' | 'cbcs';
 

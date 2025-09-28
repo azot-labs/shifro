@@ -1,11 +1,11 @@
 import { AllRegisteredBoxes, ISOFile, Sample } from 'mp4box';
 import { DataViewReader } from './data-view-reader';
 
-type Frma = AllRegisteredBoxes['frma'];
-type Schm = AllRegisteredBoxes['schm'];
-type Schi = AllRegisteredBoxes['schi'] & { tenc: AllRegisteredBoxes['tenc'] };
-type Sinf = AllRegisteredBoxes['sinf'] & { frma: Frma; schm: Schm; schi: Schi };
-type Encv = AllRegisteredBoxes['encv'] & { sinf: Sinf };
+export type Frma = AllRegisteredBoxes['frma'];
+export type Schm = AllRegisteredBoxes['schm'];
+export type Schi = AllRegisteredBoxes['schi'] & { tenc: AllRegisteredBoxes['tenc'] };
+export type Sinf = AllRegisteredBoxes['sinf'] & { frma: Frma; schm: Schm; schi: Schi };
+export type Encv = AllRegisteredBoxes['encv'] & { sinf: Sinf };
 
 export const getSampleDescription = (sample: Sample) => {
   const sampleDescription = sample.description as Encv;
