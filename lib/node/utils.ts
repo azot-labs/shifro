@@ -1,8 +1,6 @@
 import { createHash } from 'node:crypto';
-import { createWriteStream, createReadStream, type PathLike } from 'node:fs';
-import { stat } from 'node:fs/promises';
-import { Readable, Writable } from 'node:stream';
-import { decryptStream } from '../../shifro';
+import { createReadStream, type PathLike } from 'node:fs';
+import { decryptStream, Input, Output, FilePathSource, FilePathTarget, Decryption } from '../../shifro';
 
 export const readFirstNBytes = async (path: PathLike, n: number = 1 * 1024 * 1024): Promise<Buffer> => {
   const chunks: Buffer[] = [];
@@ -26,25 +24,17 @@ export const decryptFile = async (
   outputPath: string,
   params: Parameters<typeof decryptStream>[2]
 ) => {
-  const inputInfo = await stat(inputPath);
-  const inputNodeStream = createReadStream(inputPath, { highWaterMark: 1024 * 1024 * 10 });
-  const inputWebStream = Readable.toWeb(inputNodeStream) as ReadableStream;
-
-  const outputNodeStream = createWriteStream(outputPath);
-  const outputWebStream = Writable.toWeb(outputNodeStream);
-
   console.time('\nDone!');
 
-  await decryptStream(inputWebStream, outputWebStream, {
-    key: 'key' in params ? params.key : '',
-    keyId: params.keyId,
-    onProgress: (progress) => {
-      process.stdout.write(`\rDecrypting... [${progress}/${inputInfo.size}]`);
-      if (progress === inputInfo.size) {
-        process.stdout.write('\n');
-      }
-    },
+  const input = new Input({ source: new FilePathSource(inputPath) });
+  const output = new Output({ target: new FilePathTarget(outputPath) });
+  const decryption = await Decryption.init({
+    input,
+    output,
+    keys: [{ kid: params.keyId, key: 'key' in params ? params.key : '' }],
+    onProgress: (progress) => process.stdout.write(`\rDecrypting... [${progress}]`),
   });
+  await decryption.execute();
 
   console.timeEnd('\nDone!');
 };
