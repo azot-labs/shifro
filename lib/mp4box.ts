@@ -1,6 +1,6 @@
 import { Writable, Readable } from 'node:stream';
 import fs from 'node:fs';
-import { DecryptStream } from './decrypt-transformer';
+import { DecryptStream } from './decrypt-stream';
 import { parseHex } from './buffer';
 import { decryptWithKey, TransformSampleParams } from '../shifro';
 
