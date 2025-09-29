@@ -8,9 +8,13 @@
   "scripts": {
     "start": "node ./dist/cli.cjs",
     "web": "vite",
-    "build": "npm run build:lib && npm run build:cli",
-    "build:cli": "tsdown ./src/cli.ts --format cjs --dts --no-clean",
-    "build:lib": "tsdown ./src/index.ts --format cjs --format esm --dts --platform neutral",
+    "build": "npm run bundle:lib && npm run bundle:cli",
+    "bundle:lib": "tsdown ./src/index.ts --format cjs --format esm --dts --platform neutral",
+    "bundle:cli": "tsdown ./src/cli.ts --format cjs --dts --no-clean",
+    "build:cli": "npm run build:cli:mac && npm run build:cli:linux && npm run build:cli:win",
+    "build:cli:mac": "bun build --compile --minify --bytecode --target=bun-darwin-arm64 ./src/cli.ts --outfile shifro-windows.exe",
+    "build:cli:linux": "bun build --compile --minify --bytecode --target=bun-linux-x64 ./src/cli.ts --outfile shifro-linux",
+    "build:cli:win": "bun build --compile --minify --bytecode --target=bun-windows-x64 ./src/cli.ts --outfile shifro-macos",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "prepublishOnly": "npm run build"
@@ -69,13 +73,13 @@
   "engines": {
     "node": ">=20"
   },
+  "dependencies": {
+    "mp4box": "^2.1.1"
+  },
   "devDependencies": {
     "@types/node": "^24.5.2",
     "tsdown": "^0.15.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
-  },
-  "dependencies": {
-    "mp4box": "^2.1.1"
   }
 }
