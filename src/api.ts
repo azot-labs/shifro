@@ -8,11 +8,15 @@ const node =
     ? nodeAlias // Aliasing it prevents some bundler warnings
     : undefined!;
 
+const DEFAULT_MAX_CHUNK_SIZE = 16 * 2 ** 20; /* 16 MiB */
+
+const highWaterMark = DEFAULT_MAX_CHUNK_SIZE;
+
 export class FilePathSource {
   public readable: ReadableStream;
 
   constructor(public filePath: string) {
-    const readStream = node.fs.createReadStream(filePath);
+    const readStream = node.fs.createReadStream(filePath, { highWaterMark });
     this.readable = node.stream.Readable.toWeb(readStream) as ReadableStream;
   }
 }
@@ -21,7 +25,7 @@ export class FilePathTarget {
   public writable: WritableStream;
 
   constructor(public filePath: string) {
-    const writeStream = node.fs.createWriteStream(filePath);
+    const writeStream = node.fs.createWriteStream(filePath, { highWaterMark });
     this.writable = node.stream.Writable.toWeb(writeStream);
   }
 }
