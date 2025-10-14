@@ -166,3 +166,53 @@ export const processSamples = async ({
   }
   return { data, nextSampleNum, trackId };
 };
+
+export class SampleCollector {
+  private samplesBuffer: Map<number, Sample[]> = new Map();
+  private lastMoofNumber: number | null = null;
+
+  addSamples(samples: Sample[]): Sample[] | null {
+    if (samples.length === 0) return null;
+
+    const currentMoofNumber = samples[0].moof_number!;
+
+    // If we're moving to a new moof and have buffered samples from the previous moof
+    if (this.lastMoofNumber !== null && currentMoofNumber !== this.lastMoofNumber) {
+      const completeMoofSamples = this.samplesBuffer.get(this.lastMoofNumber) || [];
+      this.samplesBuffer.delete(this.lastMoofNumber);
+
+      // Buffer the current samples
+      const existing = this.samplesBuffer.get(currentMoofNumber) || [];
+      this.samplesBuffer.set(currentMoofNumber, [...existing, ...samples]);
+      this.lastMoofNumber = currentMoofNumber;
+
+      return completeMoofSamples.length > 0 ? completeMoofSamples : null;
+    }
+
+    // Buffer the current samples
+    const existing = this.samplesBuffer.get(currentMoofNumber) || [];
+    this.samplesBuffer.set(currentMoofNumber, [...existing, ...samples]);
+    this.lastMoofNumber = currentMoofNumber;
+
+    return null;
+  }
+
+  getRemainingMoofs(): Sample[][] {
+    const result: Sample[][] = [];
+
+    // Sort by moof number to maintain order
+    const sortedMoofNumbers = Array.from(this.samplesBuffer.keys()).sort((a, b) => a - b);
+
+    for (const moofNumber of sortedMoofNumbers) {
+      const samples = this.samplesBuffer.get(moofNumber);
+      if (samples && samples.length > 0) {
+        result.push(samples);
+      }
+    }
+
+    this.samplesBuffer.clear();
+    this.lastMoofNumber = null;
+
+    return result;
+  }
+}

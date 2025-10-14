@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import { ASSET_DATA, getHash } from './utils';
 import { Input, FilePathSource, Output, FilePathTarget, Decryption } from '../src/api';
 
-test('decrypting with new api', async () => {
+test('decrypting file', async () => {
   if (fs.existsSync(ASSET_DATA.outputPath)) fs.unlinkSync(ASSET_DATA.outputPath);
 
   const input = new Input({ source: new FilePathSource(ASSET_DATA.inputPath) });

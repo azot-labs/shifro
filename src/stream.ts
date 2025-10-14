@@ -1,6 +1,6 @@
 import { ISOFile, Movie, MP4BoxBuffer } from 'mp4box';
 import { concatUint8Array } from './buffer';
-import { processSamples } from './sample';
+import { processSamples, SampleCollector } from './sample';
 import { createFiles, processInit } from './init';
 
 export type EncryptionScheme = 'cenc' | 'cbcs';
@@ -31,6 +31,7 @@ class DecryptTransformer {
   private bytesRead = 0;
   private processedBytes = 0;
   private samplesProcessingQueue: Promise<{ data: Uint8Array; trackId: number; nextSampleNum: number }>[] = [];
+  private sampleCollector = new SampleCollector();
 
   constructor(private options: DecryptTransformerOptions = {}) {
     const { input, ready, output } = createFiles();
@@ -47,13 +48,16 @@ class DecryptTransformer {
     const { init } = await processInit({ input, info, output });
     this.buffer = concatUint8Array([this.buffer, init]);
     this.input.onSamples = (_id, _user, samples) => {
-      this.samplesProcessingQueue.push(
-        processSamples({
-          input: this.input,
-          samples,
-          transform: this.options.transformSample,
-        })
-      );
+      const completeMoof = this.sampleCollector.addSamples(samples);
+      if (completeMoof) {
+        this.samplesProcessingQueue.push(
+          processSamples({
+            input: this.input,
+            samples: completeMoof,
+            transform: this.options.transformSample,
+          })
+        );
+      }
     };
     this.input.start();
   }
@@ -71,6 +75,18 @@ class DecryptTransformer {
   }
 
   async flush(controller: TransformStreamDefaultController) {
+    // Process any remaining buffered moofs
+    const remainingMoofs = this.sampleCollector.getRemainingMoofs();
+    for (const moofSamples of remainingMoofs) {
+      this.samplesProcessingQueue.push(
+        processSamples({
+          input: this.input,
+          samples: moofSamples,
+          transform: this.options.transformSample,
+        })
+      );
+    }
+
     while (this.samplesProcessingQueue.length > 0) {
       const segment = await this.samplesProcessingQueue.shift();
       if (!segment) continue;
