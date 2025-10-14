@@ -75,7 +75,7 @@ class DecryptTransformer {
       const segment = await this.samplesProcessingQueue.shift();
       if (!segment) continue;
       this.buffer = concatUint8Array([this.buffer, segment.data]);
-      this.input.releaseUsedSamples(segment.trackId, segment.nextSampleNum + 1);
+      this.input.releaseUsedSamples(segment.trackId, segment.nextSampleNum);
     }
     if (this.buffer.length > 0) {
       controller.enqueue(this.buffer);
