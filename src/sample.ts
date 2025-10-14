@@ -56,7 +56,7 @@ export const getSenc = (mp4: ISOFile, moofIndex: number, perSampleIvSize: number
   return { moof, traf, trun, senc };
 };
 
-export const processSamples = async ({
+const processSampleGroup = async ({
   input,
   samples,
   transform,
@@ -143,4 +143,26 @@ export const processSamples = async ({
   const nextSampleNum = lastSampleNum + 1; // TODO: Check if this really next sample number
 
   return { data: segment, trackId, nextSampleNum };
+};
+
+export const processSamples = async ({
+  input,
+  samples,
+  transform,
+}: {
+  input: ISOFile;
+  samples: Sample[];
+  transform?: TransformSampleFn;
+}) => {
+  const groupedSamples = Object.groupBy(samples, (sample) => sample.moof_number!);
+  let trackId = samples[0].track_id;
+  let data = new Uint8Array();
+  let nextSampleNum = 0;
+  for (const moofNumber in groupedSamples) {
+    const samples = groupedSamples[moofNumber]!;
+    const sampleGroup = await processSampleGroup({ input, samples, transform });
+    data = concatUint8Array([data, sampleGroup.data]);
+    nextSampleNum = sampleGroup.nextSampleNum;
+  }
+  return { data, nextSampleNum, trackId };
 };

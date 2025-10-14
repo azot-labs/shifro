@@ -12,7 +12,7 @@ export const createFiles = () => {
 
 export const processInit = async ({ input, info, output }: { input: ISOFile; info: Movie; output: ISOFile }) => {
   const track = info.tracks[0];
-  input.setExtractionOptions(track.id, undefined, { nbSamples: 100 });
+  input.setExtractionOptions(track.id, undefined, { nbSamples: 1000 });
 
   const initStream = new DataStream();
   const ftyp = output.ftyp;
