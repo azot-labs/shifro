@@ -1,16 +1,16 @@
 {
   "name": "shifro",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "A lightweight library for decrypting MP4 files, directly in the browser",
   "files": [
     "dist"
   ],
   "scripts": {
-    "start": "node ./dist/cli.cjs",
+    "start": "node ./dist/cli.mjs",
     "web": "vite",
     "build": "npm run bundle:lib && npm run bundle:cli",
     "bundle:lib": "tsdown ./src/index.ts --format cjs --format esm --dts --platform neutral",
-    "bundle:cli": "tsdown ./src/cli.ts --format cjs --dts --no-clean",
+    "bundle:cli": "tsdown ./src/cli.ts --format esm --no-clean",
     "build:cli": "npm run build:cli:mac && npm run build:cli:linux && npm run build:cli:win",
     "build:cli:mac": "bun build --compile --minify --bytecode --target=bun-darwin-arm64 ./src/cli.ts --outfile shifro-windows.exe",
     "build:cli:linux": "bun build --compile --minify --bytecode --target=bun-linux-x64 ./src/cli.ts --outfile shifro-linux",
@@ -20,7 +20,7 @@
     "prepublishOnly": "npm run build"
   },
   "bin": {
-    "shifro": "./dist/cli.cjs"
+    "shifro": "./dist/cli.mjs"
   },
   "type": "module",
   "main": "./dist/index.js",
@@ -71,15 +71,15 @@
     }
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
-    "mp4box": "^2.1.1"
+    "mediabunny": "^1.42.0-beta.5"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
-    "tsdown": "^0.15.5",
+    "tsdown": "^0.21.10",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.5"
   }
 }

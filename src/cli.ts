@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util';
-import { Input, FilePathSource, Output, FilePathTarget, Decryption } from './api';
 import packageJson from '../package.json';
+import { Input, FilePathSource, Output, FilePathTarget, Decryption, KeyId, Key } from './main';
 
 const args = parseArgs({
   allowPositionals: true,
@@ -19,19 +19,16 @@ const [inputPath, outputPath] = args.positionals;
 const decryptFile = async () => {
   console.time('\nDone!');
 
-  const input = new Input({ source: new FilePathSource(inputPath) });
-  const output = new Output({ target: new FilePathTarget(outputPath) });
-  const keys = keyStrings.map((keyString) => {
-    const [key, kid] = keyString.split(':').reverse();
-    return { key, kid };
+  const decryption = await Decryption.init({
+    input: new Input({
+      source: new FilePathSource(inputPath),
+      keys: new Map<KeyId, Key>(keyStrings.map((keyString) => keyString.split(':') as [KeyId, Key])),
+    }),
+    output: new Output({ target: new FilePathTarget(outputPath) }),
   });
 
-  const decryption = await Decryption.init({
-    input,
-    output,
-    keys,
-    onProgress: (progress) => process.stdout.write(`\rDecrypting... [${progress}]`),
-  });
+  decryption.onProgress = (progress) => process.stdout.write(`\rDecrypting... [${Math.round(progress * 100)}%]`),
+
   await decryption.execute();
 
   console.timeEnd('\nDone!');
@@ -41,7 +38,7 @@ const showHelp = () => {
   console.log(
     `
 ${packageJson.name} version ${packageJson.version}
-(c) 2024-2025 ${packageJson.author}
+(c) 2024-2026 ${packageJson.author}
 
 Usage: ${packageJson.name} [options] <input> <output>
 

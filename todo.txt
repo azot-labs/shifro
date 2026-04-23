@@ -1,0 +1,2 @@
+- Parse PSSH from initialization segment
+- Override decryptSample function to delegate sample decryption to third-party libraries
