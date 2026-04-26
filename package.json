@@ -9,7 +9,7 @@
     "start": "node ./dist/cli.mjs",
     "web": "vite",
     "build": "pnpm run bundle:lib && pnpm run bundle:cli",
-    "bundle:lib": "tsdown ./src/index.ts --format cjs --format esm --dts --platform neutral",
+    "bundle:lib": "tsdown ./src/index.ts --format esm --dts --platform neutral --fixed-extension",
     "bundle:cli": "tsdown ./src/cli.ts --format esm --no-clean",
     "build:cli": "pnpm run build:cli:mac && pnpm run build:cli:linux && pnpm run build:cli:win",
     "build:cli:mac": "bun build --compile --minify --bytecode --target=bun-darwin-arm64 ./src/cli.ts --outfile shifro-windows.exe",
@@ -27,18 +27,13 @@
     "shifro": "./dist/cli.mjs"
   },
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      },
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
+      "types": "./dist/index.d.mts",
+      "module-sync": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     }
   },
   "repository": {
