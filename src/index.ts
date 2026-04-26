@@ -3,22 +3,22 @@ import {
   FilePathSource,
   UrlSource,
   StreamSource,
-  StreamSourceOptions,
   ReadableStreamSource,
   Input as MediabunnyInput,
-  InputOptions,
   FilePathTarget,
   StreamTarget,
-  StreamTargetOptions,
   Output as MediabunnyOutput,
   Mp4OutputFormat,
   MovOutputFormat,
   MkvOutputFormat,
   Mp3OutputFormat,
   Conversion,
-  OutputOptions,
-  OutputFormat,
-  PsshBox,
+  type StreamSourceOptions,
+  type InputOptions,
+  type StreamTargetOptions,
+  type OutputOptions,
+  type OutputFormat,
+  type PsshBox,
 } from 'mediabunny';
 
 type KeyId = string;
@@ -26,7 +26,14 @@ type Key = string;
 type KeyMap = Map<KeyId, Key>;
 
 class Input extends MediabunnyInput {
-  constructor({ keys, handleEncryptionInfo, ...options }: Omit<InputOptions, 'formats' | 'formatOptions'> & { keys: KeyMap, handleEncryptionInfo?: (options: { keyId: string; psshBoxes: PsshBox[]; }) => void }) {
+  constructor({
+    keys,
+    handleEncryptionInfo,
+    ...options
+  }: Omit<InputOptions, 'formats' | 'formatOptions'> & {
+    keys: KeyMap;
+    handleEncryptionInfo?: (options: { keyId: string; psshBoxes: PsshBox[] }) => void;
+  }) {
     super({
       ...options,
       formats: ALL_FORMATS,
@@ -57,22 +64,25 @@ export {
   UrlSource,
   FilePathSource,
   StreamSource,
-  StreamSourceOptions,
   ReadableStreamSource,
-  KeyId,
-  Key,
-  KeyMap,
-  InputOptions,
   Input,
   FilePathTarget,
   StreamTarget,
-  StreamTargetOptions,
-  OutputOptions,
-  OutputFormat,
   Output,
   Mp4OutputFormat,
   MovOutputFormat,
   MkvOutputFormat,
   Mp3OutputFormat,
   Conversion as Decryption,
-}
+};
+
+export type {
+  StreamSourceOptions,
+  KeyId,
+  Key,
+  KeyMap,
+  InputOptions,
+  StreamTargetOptions,
+  OutputOptions,
+  OutputFormat,
+};

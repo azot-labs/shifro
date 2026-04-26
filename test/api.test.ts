@@ -1,7 +1,8 @@
-import fs from 'node:fs';
+import * as fs from 'node:fs';
 import { expect, test } from 'vitest';
 import { ASSET_DATA, getHash } from './utils';
-import { Input, FilePathSource, Output, FilePathTarget, Decryption, KeyId, Key } from '../src';
+import { Decryption, FilePathSource, FilePathTarget, Input, Output } from '../src';
+import type { Key, KeyId } from '../src';
 
 test('decrypting file', async () => {
   if (fs.existsSync(ASSET_DATA.outputPath)) fs.unlinkSync(ASSET_DATA.outputPath);
@@ -9,9 +10,7 @@ test('decrypting file', async () => {
   const decryption = await Decryption.init({
     input: new Input({
       source: new FilePathSource(ASSET_DATA.inputPath),
-      keys: new Map<KeyId, Key>([
-        [ASSET_DATA.keyId, ASSET_DATA.keyValue],
-      ])
+      keys: new Map<KeyId, Key>([[ASSET_DATA.keyId, ASSET_DATA.keyValue]]),
     }),
     output: new Output({ target: new FilePathTarget(ASSET_DATA.outputPath) }),
   });

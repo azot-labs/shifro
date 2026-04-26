@@ -23,7 +23,8 @@ Run `npm install shifro` to install the library as dependency for your project.
 #### Decrypting file using Node.js streams
 
 ```ts
-import { Decryption, Input, FilePathSource, KeyId, Key, Output, FilePathTarget } from 'shifro';
+import { Decryption, FilePathSource, FilePathTarget, Input, Output } from 'shifro';
+import type { Key, KeyId } from 'shifro';
 
 async function decrypt() {
   const decryption = await Decryption.init({
@@ -45,7 +46,8 @@ async function decrypt() {
     output: new Output({ target: new FilePathTarget('./output.mp4') }),
   });
 
-  decryption.onProgress = (progress) => process.stdout.write(`\rDecrypting... [${Math.round(progress * 100)}%]`),
+  decryption.onProgress = (progress) =>
+    process.stdout.write(`\rDecrypting... [${Math.round(progress * 100)}%]`);
 
   await decryption.execute();
 }
@@ -54,7 +56,8 @@ async function decrypt() {
 #### Decrypting file using browser's Web Streams API
 
 ```ts
-import { Decryption, Input, ReadableStreamSource, KeyId, Key, Output, StreamTarget } from 'shifro';
+import { Decryption, Input, Output, ReadableStreamSource, StreamTarget } from 'shifro';
+import type { Key, KeyId } from 'shifro';
 
 async function decryptFromBrowser() {
   const handleFileSelect = async () => {
@@ -62,12 +65,15 @@ async function decryptFromBrowser() {
       const input = document.querySelector<HTMLInputElement>('#input')!;
       input.addEventListener('change', () => resolve(input.files![0]));
     });
-  }
+  };
 
   const inputFile = await handleFileSelect();
   const inputReadableStream = inputFile.stream();
 
-  const outputFileHandle = window.showSaveFilePicker({ suggestedName: 'output.mp4', startIn: 'downloads' });
+  const outputFileHandle = window.showSaveFilePicker({
+    suggestedName: 'output.mp4',
+    startIn: 'downloads',
+  });
   const outputWritableStream = await outputFileHandle.createWritable();
 
   const decryption = await Decryption.init({
@@ -76,17 +82,17 @@ async function decryptFromBrowser() {
       keys: new Map<KeyId, Key>([
         ['4d97930a3d7b55fa81d0028653f5e499', '429ec76475e7a952d224d8ef867f12b6'],
         ['d21373c0b8ab5ba9954742bcdfb5f48b', '150a6c7d7dee6a91b74dccfce5b31928'],
-      ])
+      ]),
     }),
     output: new Output({ target: new StreamTarget(outputWritableStream) }),
   });
 
-  decryption.onProgress = (progress) => console.log(`Decrypting... [${Math.round(progress * 100)}%]`),
+  decryption.onProgress = (progress) =>
+    console.log(`Decrypting... [${Math.round(progress * 100)}%]`);
 
   await decryption.execute();
 }
 ```
-
 
 ## Credits
 

@@ -8,5 +8,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["*.d.ts", "*.ts", "src/index.ts"]
+  "include": ["*.d.ts", "src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["dist", "coverage"]
 }
