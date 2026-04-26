@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import { parseArgs } from 'node:util';
-import packageJson from '../package.json';
-import { Input, FilePathSource, Output, FilePathTarget, Decryption, KeyId, Key } from './index';
+import * as packageJson from '../package.json';
+import { Decryption, FilePathSource, FilePathTarget, Input, Output } from './index';
+import type { Key, KeyId } from './index';
 
 const args = parseArgs({
   allowPositionals: true,
@@ -22,12 +23,15 @@ const decryptFile = async () => {
   const decryption = await Decryption.init({
     input: new Input({
       source: new FilePathSource(inputPath),
-      keys: new Map<KeyId, Key>(keyStrings.map((keyString) => keyString.split(':') as [KeyId, Key])),
+      keys: new Map<KeyId, Key>(
+        keyStrings.map((keyString) => keyString.split(':') as [KeyId, Key]),
+      ),
     }),
     output: new Output({ target: new FilePathTarget(outputPath) }),
   });
 
-  decryption.onProgress = (progress) => process.stdout.write(`\rDecrypting... [${Math.round(progress * 100)}%]`),
+  decryption.onProgress = (progress) =>
+    process.stdout.write(`\rDecrypting... [${Math.round(progress * 100)}%]`);
 
   await decryption.execute();
 
@@ -47,7 +51,7 @@ Options:
     <id> is either a track ID in decimal or a 128-bit KID in hex,
     <k> is a 128-bit key in hex
     (several --key options can be used, one for each track or KID)
-      `.trim()
+      `.trim(),
   );
 };
 

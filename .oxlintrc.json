@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "ignorePatterns": ["dist/**", "coverage/**"],
+  "rules": {
+    "typescript/consistent-type-imports": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/cli.ts", "test/**/*.ts"],
+      "env": {
+        "node": true
+      }
+    }
+  ]
+}

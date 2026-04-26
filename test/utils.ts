@@ -1,7 +1,10 @@
 import { createReadStream, type PathLike } from 'node:fs';
 import { createHash } from 'node:crypto';
 
-export const readFirstNBytes = async (path: PathLike, n: number = 1 * 1024 * 1024): Promise<Buffer> => {
+export const readFirstNBytes = async (
+  path: PathLike,
+  n: number = 1 * 1024 * 1024,
+): Promise<Buffer> => {
   const chunks: Buffer[] = [];
   for await (const chunk of createReadStream(path, { start: 0, end: n - 1 })) {
     chunks.push(chunk);
