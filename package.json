@@ -8,16 +8,16 @@
   "scripts": {
     "start": "node ./dist/cli.mjs",
     "web": "vite",
-    "build": "npm run bundle:lib && npm run bundle:cli",
+    "build": "pnpm run bundle:lib && pnpm run bundle:cli",
     "bundle:lib": "tsdown ./src/index.ts --format cjs --format esm --dts --platform neutral",
     "bundle:cli": "tsdown ./src/cli.ts --format esm --no-clean",
-    "build:cli": "npm run build:cli:mac && npm run build:cli:linux && npm run build:cli:win",
+    "build:cli": "pnpm run build:cli:mac && pnpm run build:cli:linux && pnpm run build:cli:win",
     "build:cli:mac": "bun build --compile --minify --bytecode --target=bun-darwin-arm64 ./src/cli.ts --outfile shifro-windows.exe",
     "build:cli:linux": "bun build --compile --minify --bytecode --target=bun-linux-x64 ./src/cli.ts --outfile shifro-linux",
     "build:cli:win": "bun build --compile --minify --bytecode --target=bun-windows-x64 ./src/cli.ts --outfile shifro-macos",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm run build"
   },
   "bin": {
     "shifro": "./dist/cli.mjs"
@@ -63,6 +63,7 @@
   },
   "author": "Vitaly Gashkov <vitalygashkov@vk.com>",
   "license": "MIT",
+  "packageManager": "pnpm@10.28.1",
   "readmeFilename": "README.md",
   "funding": [
     {
