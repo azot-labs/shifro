@@ -2,7 +2,7 @@
 
 import { parseArgs } from 'node:util';
 import packageJson from '../package.json';
-import { Input, FilePathSource, Output, FilePathTarget, Decryption, KeyId, Key } from './main';
+import { Input, FilePathSource, Output, FilePathTarget, Decryption, KeyId, Key } from './index';
 
 const args = parseArgs({
   allowPositionals: true,

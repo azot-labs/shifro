@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { expect, test } from 'vitest';
 import { ASSET_DATA, getHash } from './utils';
-import { Input, FilePathSource, Output, FilePathTarget, Decryption, KeyId, Key } from '../src/main';
+import { Input, FilePathSource, Output, FilePathTarget, Decryption, KeyId, Key } from '../src';
 
 test('decrypting file', async () => {
   if (fs.existsSync(ASSET_DATA.outputPath)) fs.unlinkSync(ASSET_DATA.outputPath);

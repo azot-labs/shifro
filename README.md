@@ -32,7 +32,15 @@ async function decrypt() {
       keys: new Map<KeyId, Key>([
         ['4d97930a3d7b55fa81d0028653f5e499', '429ec76475e7a952d224d8ef867f12b6'],
         ['d21373c0b8ab5ba9954742bcdfb5f48b', '150a6c7d7dee6a91b74dccfce5b31928'],
-      ])
+      ]),
+      // Optinally, you can use this callback to handle encryption information (like key ID and PSSH boxes)
+      handleEncryptionInfo: ({ keyId, psshBoxes }) => {
+        console.group(`Key ID: ${keyId}`);
+        for (const psshBox of psshBoxes) {
+          console.log(`PSSH box: ${psshBox.systemId} (${psshBox.data.length} bytes)`);
+        }
+        console.groupEnd();
+      },
     }),
     output: new Output({ target: new FilePathTarget('./output.mp4') }),
   });

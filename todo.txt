@@ -1,2 +1,2 @@
-- Parse PSSH from initialization segment
-- Override decryptSample function to delegate sample decryption to third-party libraries
+- Ability to override decryptSample function to delegate sample decryption to third-party libraries (that may perform decryption without exposing actual decryption key)
+  - data, keyId, encryptionScheme, iv:buffer, timestamp, cryptByteBlock:number, skipByteBlock:number, subsamples<{clearBytes:number, cipherBytes:number}>[]
