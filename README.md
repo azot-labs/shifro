@@ -8,13 +8,17 @@ This tool is a small wrapper around the [Mediabunny](https://github.com/Vanilagy
 
 ### CLI
 
-Run `npm install -g shifro` to install the command-line tool globally ([Node.js](https://nodejs.org/en/download) required).
+> [Node.js](https://nodejs.org/en/download) is required (or any other runtime that has compatibility with Node.js API, like [Bun](https://bun.com/)).
+
+Run `npm install -g shifro` to install the command-line tool globally.
 
 ```bash
 shifro --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb ./input.mp4 ./output.mp4
 ```
 
-This can be used as an alternative to the [mp4decrypt](https://www.bento4.com/documentation/mp4decrypt/) or [shaka-packager](https://shaka-project.github.io/shaka-packager/html/documentation.html#raw-key-encryption-options).
+>You can also use `npx shifro ...` to run the CLI tool without installing it globally
+
+This CLI can be used as an alternative to the [mp4decrypt](https://www.bento4.com/documentation/mp4decrypt/) or [shaka-packager](https://shaka-project.github.io/shaka-packager/html/documentation.html#raw-key-encryption-options).
 
 ### Library
 
