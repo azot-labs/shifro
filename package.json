@@ -73,8 +73,8 @@
   "engines": {
     "node": ">=22.18"
   },
-  "dependencies": {
-    "mediabunny": "^1.42.0"
+  "peerDependencies": {
+    "mediabunny": ">=1.43.1"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
