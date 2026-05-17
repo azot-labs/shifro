@@ -1,6 +1,6 @@
 {
   "name": "shifro",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "A lightweight library and command-line tool for decrypting MP4 files",
   "files": [
     "dist"
