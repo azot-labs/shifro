@@ -41,6 +41,8 @@ export type IsobmffDecryptSampleOptions = {
   scheme: IsobmffScheme;
   /** Per-sample IV resolved from container metadata. */
   iv: Uint8Array;
+  /** Presentation timestamp of the sample in microseconds. */
+  timestamp: number;
   /** Subsample layout describing which parts of `data` are clear vs protected, or `null` for whole-sample encryption. */
   subsamples: SubsampleEncryption[] | null;
   /** Pattern encryption parameters, or `null` when no pattern is used. */
@@ -67,6 +69,8 @@ export type IsobmffDecryptProtectedDataOptions = {
   scheme: IsobmffScheme;
   /** Per-sample IV resolved from container metadata. */
   iv: Uint8Array;
+  /** Presentation timestamp of the sample in microseconds. */
+  timestamp: number;
   /**
    * Subsample layout for the protected-data buffer passed to this callback.
    *

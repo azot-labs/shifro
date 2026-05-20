@@ -209,10 +209,17 @@ export class IsobmffDecryptSamplePatcher {
           psshBoxes,
           scheme: encryptionInfo.scheme,
           iv: encryptedSample.sampleEncryption.iv.slice(),
+          timestamp: metadataPacket.microsecondTimestamp,
           subsamples: cloneSubsamples(encryptedSample.sampleEncryption.subsamples),
           pattern: getPattern(encryptionInfo),
         })
-      : await this.decryptWithProtectedData(encryptionInfo, encryptedSample, keyId, psshBoxes);
+      : await this.decryptWithProtectedData(
+          encryptionInfo,
+          encryptedSample,
+          metadataPacket.microsecondTimestamp,
+          keyId,
+          psshBoxes,
+        );
 
     if (!isUint8Array(decryptedData)) {
       throw new TypeError('decryption callback must return a Uint8Array.');
@@ -235,6 +242,7 @@ export class IsobmffDecryptSamplePatcher {
   private async decryptWithProtectedData(
     encryptionInfo: NonNullable<ReturnType<typeof getTrackEncryptionInfo>>,
     encryptedSample: EncryptedSample,
+    timestamp: number,
     keyId: string,
     psshBoxes: PsshBox[],
   ) {
@@ -260,6 +268,7 @@ export class IsobmffDecryptSamplePatcher {
       psshBoxes,
       scheme: encryptionInfo.scheme,
       iv: encryptedSample.sampleEncryption.iv.slice(),
+      timestamp,
       subsamples: [
         {
           clearLen: 0,

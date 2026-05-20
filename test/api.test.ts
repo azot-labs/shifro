@@ -85,6 +85,8 @@ test('decrypting file with decryptProtectedData callback', async () => {
 
         expect(options.keyId).toBe(ASSET_DATA.keyId);
         expect(options.scheme).toBe('cenc');
+        expect(Number.isInteger(options.timestamp)).toBe(true);
+        expect(options.timestamp).toBeGreaterThanOrEqual(0);
         expect(options.subsamples).toEqual([
           {
             clearLen: 0,
