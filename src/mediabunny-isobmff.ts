@@ -228,6 +228,12 @@ const resolveEncryptionAuxInfo = async (
   if (auxInfo.offset === null || auxInfo.sampleCount === 0) {
     throw new Error('Incomplete saiz/saio info; cannot resolve encryption data.');
   }
+  if (auxInfo.defaultSampleInfoSize === 0 && !auxInfo.sampleSizes) {
+    throw new Error(
+      'Invalid auxiliary encryption info: auxInfo.sampleSizes is required when'
+      + ' auxInfo.defaultSampleInfoSize is 0.',
+    );
+  }
 
   let totalSize = 0;
   if (auxInfo.defaultSampleInfoSize > 0) {
