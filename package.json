@@ -62,7 +62,7 @@
   },
   "author": "Vitaly Gashkov <vitalygashkov@vk.com>",
   "license": "MIT",
-  "packageManager": "pnpm@11.0.0",
+  "packageManager": "pnpm@11.2.0",
   "readmeFilename": "README.md",
   "funding": [
     {
