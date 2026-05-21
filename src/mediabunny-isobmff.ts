@@ -1,5 +1,5 @@
 import type { EncodedPacket, PacketRetrievalOptions, PsshBox } from 'mediabunny';
-import type { EncryptionPattern, IsobmffScheme, SubsampleEncryption } from './decrypt-sample';
+import type { EncryptionPattern, EncryptionScheme, SubsampleEncryption } from './decrypt-sample';
 
 type SampleTimingEntry = {
   startIndex: number;
@@ -37,7 +37,7 @@ type SampleTable = {
 };
 
 type TrackEncryptionInfo = {
-  scheme: IsobmffScheme;
+  scheme: EncryptionScheme;
   defaultKid: string | null;
   defaultIsProtected: boolean | null;
   defaultPerSampleIvSize: number | null;
@@ -72,11 +72,6 @@ type FragmentTrackData = {
 export type Fragment = {
   trackData: Map<number, FragmentTrackData>;
   psshBoxes: PsshBox[];
-};
-
-export type ProtectedDataLayout = {
-  data: Uint8Array;
-  merge: (decryptedData: Uint8Array) => Uint8Array;
 };
 
 type FileSliceLike = {
@@ -230,8 +225,8 @@ const resolveEncryptionAuxInfo = async (
   }
   if (auxInfo.defaultSampleInfoSize === 0 && !auxInfo.sampleSizes) {
     throw new Error(
-      'Invalid auxiliary encryption info: auxInfo.sampleSizes is required when'
-      + ' auxInfo.defaultSampleInfoSize is 0.',
+      'Invalid auxiliary encryption info: auxInfo.sampleSizes is required when' +
+        ' auxInfo.defaultSampleInfoSize is 0.',
     );
   }
 
@@ -409,49 +404,6 @@ const psshBoxesAreEqual = (left: PsshBox, right: PsshBox) => {
   return true;
 };
 
-const collectCryptRanges = (
-  subsamples: SubsampleEncryption[],
-  cryptByteBlock: number,
-  skipByteBlock: number,
-) => {
-  const ranges: { offset: number; length: number }[] = [];
-  const hasPattern = cryptByteBlock !== 0 || skipByteBlock !== 0;
-
-  let cursor = 0;
-  for (const subsample of subsamples) {
-    cursor += subsample.clearLen;
-
-    if (!hasPattern) {
-      if (subsample.protectedLen > 0) {
-        ranges.push({ offset: cursor, length: subsample.protectedLen });
-      }
-      cursor += subsample.protectedLen;
-      continue;
-    }
-
-    let remaining = subsample.protectedLen;
-    let position = cursor;
-    while (remaining > 0) {
-      if (remaining < 16 * cryptByteBlock) {
-        break;
-      }
-
-      const cryptLength = 16 * cryptByteBlock;
-      ranges.push({ offset: position, length: cryptLength });
-      position += cryptLength;
-      remaining -= cryptLength;
-
-      const skipLength = Math.min(16 * skipByteBlock, remaining);
-      position += skipLength;
-      remaining -= skipLength;
-    }
-
-    cursor += subsample.protectedLen;
-  }
-
-  return ranges;
-};
-
 export const cloneSubsamples = (
   subsamples: SubsampleEncryption[] | null,
 ): SubsampleEncryption[] | null => {
@@ -474,57 +426,6 @@ export const getPattern = (encryptionInfo: TrackEncryptionInfo): EncryptionPatte
   }
 
   return { cryptByteBlock, skipByteBlock };
-};
-
-export const createProtectedDataLayout = (
-  data: Uint8Array,
-  encryptionInfo: TrackEncryptionInfo,
-  sampleEncryption: SampleEncryptionInfo,
-): ProtectedDataLayout | null => {
-  if (!sampleEncryption.subsamples) {
-    return {
-      data,
-      merge: (decryptedData) => new Uint8Array(decryptedData),
-    };
-  }
-
-  if (encryptionInfo.scheme === 'cbcs') {
-    return null;
-  }
-
-  const cryptRanges = collectCryptRanges(
-    sampleEncryption.subsamples,
-    encryptionInfo.defaultCryptByteBlock ?? 0,
-    encryptionInfo.defaultSkipByteBlock ?? 0,
-  );
-
-  let totalCryptLength = 0;
-  for (const range of cryptRanges) {
-    totalCryptLength += range.length;
-  }
-
-  const protectedData = new Uint8Array(totalCryptLength);
-  let writeOffset = 0;
-  for (const range of cryptRanges) {
-    protectedData.set(data.subarray(range.offset, range.offset + range.length), writeOffset);
-    writeOffset += range.length;
-  }
-
-  return {
-    data: protectedData,
-    merge: (decryptedData) => {
-      const merged = new Uint8Array(data);
-      let readOffset = 0;
-      for (const range of cryptRanges) {
-        merged.set(
-          decryptedData.subarray(readOffset, readOffset + range.length),
-          range.offset,
-        );
-        readOffset += range.length;
-      }
-      return merged;
-    },
-  };
 };
 
 export const isUint8Array = (value: unknown): value is Uint8Array => value instanceof Uint8Array;

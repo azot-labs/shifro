@@ -5,13 +5,9 @@ import {
   type PacketRetrievalOptions,
   type PsshBox,
 } from 'mediabunny';
-import type {
-  DecryptProtectedData,
-  DecryptSample,
-} from './decrypt-sample';
+import type { DecryptSample } from './decrypt-sample';
 import {
   cloneSubsamples,
-  createProtectedDataLayout,
   getEncryptedSample,
   getKeyId,
   getPattern,
@@ -19,9 +15,7 @@ import {
   getTrackEncryptionInfo,
   isIsobmffTrackBacking,
   isUint8Array,
-  type Fragment,
   type IsobmffTrackBacking,
-  type SampleEncryptionInfo,
 } from './mediabunny-isobmff';
 
 type InputLike = {
@@ -33,12 +27,6 @@ type PatchableInputTrack = InputTrack & {
 };
 
 type ReportEncryptionInfo = (keyId: string, psshBoxes: PsshBox[]) => void;
-
-type EncryptedSample = {
-  data: Uint8Array;
-  sampleEncryption: SampleEncryptionInfo;
-  fragment: Fragment | null;
-};
 
 const createMetadataOnlyOptions = (
   options: PacketRetrievalOptions,
@@ -55,8 +43,7 @@ export class IsobmffDecryptSamplePatcher {
 
   constructor(
     private readonly input: InputLike,
-    private readonly decryptSample: DecryptSample | undefined,
-    private readonly decryptProtectedData: DecryptProtectedData | undefined,
+    private readonly decryptSample: DecryptSample,
     private readonly reportEncryptionInfo: ReportEncryptionInfo,
   ) {}
 
@@ -202,24 +189,16 @@ export class IsobmffDecryptSamplePatcher {
     const psshBoxes = getPsshBoxes(backing, keyId, encryptedSample.fragment);
     this.reportEncryptionInfo(keyId, psshBoxes);
 
-    const decryptedData = this.decryptSample
-      ? await this.decryptSample({
-          data: encryptedSample.data,
-          keyId,
-          psshBoxes,
-          scheme: encryptionInfo.scheme,
-          iv: encryptedSample.sampleEncryption.iv.slice(),
-          timestamp: metadataPacket.microsecondTimestamp,
-          subsamples: cloneSubsamples(encryptedSample.sampleEncryption.subsamples),
-          pattern: getPattern(encryptionInfo),
-        })
-      : await this.decryptWithProtectedData(
-          encryptionInfo,
-          encryptedSample,
-          metadataPacket.microsecondTimestamp,
-          keyId,
-          psshBoxes,
-        );
+    const decryptedData = await this.decryptSample({
+      data: encryptedSample.data,
+      keyId,
+      psshBoxes,
+      scheme: encryptionInfo.scheme,
+      iv: encryptedSample.sampleEncryption.iv.slice(),
+      timestamp: metadataPacket.microsecondTimestamp,
+      subsamples: cloneSubsamples(encryptedSample.sampleEncryption.subsamples),
+      pattern: getPattern(encryptionInfo),
+    });
 
     if (!isUint8Array(decryptedData)) {
       throw new TypeError('decryption callback must return a Uint8Array.');
@@ -237,56 +216,5 @@ export class IsobmffDecryptSamplePatcher {
       metadataPacket.byteLength,
       metadataPacket.sideData,
     );
-  }
-
-  private async decryptWithProtectedData(
-    encryptionInfo: NonNullable<ReturnType<typeof getTrackEncryptionInfo>>,
-    encryptedSample: EncryptedSample,
-    timestamp: number,
-    keyId: string,
-    psshBoxes: PsshBox[],
-  ) {
-    if (!this.decryptProtectedData) {
-      throw new Error('Encrypted sample encountered without a decryption callback.');
-    }
-
-    const protectedDataLayout = createProtectedDataLayout(
-      encryptedSample.data,
-      encryptionInfo,
-      encryptedSample.sampleEncryption,
-    );
-    if (!protectedDataLayout) {
-      throw new Error(
-        'decryptProtectedData does not support cbcs samples with subsample encryption.'
-        + ' Use decryptSample for this content.',
-      );
-    }
-
-    const decryptedProtectedData = await this.decryptProtectedData({
-      data: protectedDataLayout.data,
-      keyId,
-      psshBoxes,
-      scheme: encryptionInfo.scheme,
-      iv: encryptedSample.sampleEncryption.iv.slice(),
-      timestamp,
-      subsamples: [
-        {
-          clearLen: 0,
-          protectedLen: protectedDataLayout.data.byteLength,
-        },
-      ],
-      pattern: null,
-    });
-
-    if (!isUint8Array(decryptedProtectedData)) {
-      throw new TypeError('decryptProtectedData must return a Uint8Array.');
-    }
-    if (decryptedProtectedData.byteLength !== protectedDataLayout.data.byteLength) {
-      throw new Error(
-        'decryptProtectedData must return the same number of bytes as the protected data input.',
-      );
-    }
-
-    return protectedDataLayout.merge(decryptedProtectedData);
   }
 }

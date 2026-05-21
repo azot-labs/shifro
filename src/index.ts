@@ -23,14 +23,17 @@ import {
   type InputTrackQuery,
 } from 'mediabunny';
 import type {
-  DecryptProtectedData,
+  DecryptBytesCallback,
   DecryptSample,
-  IsobmffDecryptProtectedDataOptions,
-  IsobmffDecryptSampleOptions,
+  EncryptionPattern,
+  EncryptedBytes,
+  EncryptedSample,
   Key,
   KeyId,
   KeyMap,
+  SubsampleEncryption,
 } from './decrypt-sample';
+import { decryptBytes } from './decrypt-sample';
 import { IsobmffDecryptSamplePatcher } from './isobmff-decrypt-sample-patcher';
 
 /**
@@ -54,13 +57,6 @@ export type ShifroInputOptions = Omit<MediabunnyInputOptions, 'formats' | 'forma
    * metadata, or pattern encryption information.
    */
   decryptSample?: DecryptSample;
-  /**
-   * Simplified decryption callback that receives only the flattened protected byte stream.
-   *
-   * `shifro` extracts the protected bytes from the sample before calling this callback and reinserts the decrypted
-   * bytes back into the sample afterward.
-   */
-  decryptProtectedData?: DecryptProtectedData;
   /**
    * Optional callback invoked when encryption metadata is discovered for a sample.
    *
@@ -88,15 +84,9 @@ const createEncryptionReporter = (
 class Input extends MediabunnyInput {
   private readonly decryptSamplePatcher: IsobmffDecryptSamplePatcher | null;
 
-  constructor({
-    keys,
-    decryptSample,
-    decryptProtectedData,
-    handleEncryptionInfo,
-    ...options
-  }: ShifroInputOptions) {
-    if (!keys?.size && !decryptSample && !decryptProtectedData) {
-      throw new Error('Either keys, decryptSample, or decryptProtectedData must be provided.');
+  constructor({ keys, decryptSample, handleEncryptionInfo, ...options }: ShifroInputOptions) {
+    if (!keys?.size && !decryptSample) {
+      throw new Error('Either keys or decryptSample must be provided.');
     }
 
     const reportEncryptionInfo = createEncryptionReporter(handleEncryptionInfo);
@@ -120,15 +110,13 @@ class Input extends MediabunnyInput {
       },
     });
 
-    this.decryptSamplePatcher =
-      decryptSample || decryptProtectedData
-        ? new IsobmffDecryptSamplePatcher(
-            { getTracks: (query) => this.getTracksWithoutPatching(query) },
-            decryptSample,
-            decryptProtectedData,
-            reportEncryptionInfo,
-          )
-        : null;
+    this.decryptSamplePatcher = decryptSample
+      ? new IsobmffDecryptSamplePatcher(
+          { getTracks: (query) => this.getTracksWithoutPatching(query) },
+          decryptSample,
+          reportEncryptionInfo,
+        )
+      : null;
   }
 
   override async getTracks(query?: InputTrackQuery<InputTrack>): Promise<InputTrack[]> {
@@ -165,6 +153,7 @@ export {
   MovOutputFormat,
   MkvOutputFormat,
   Mp3OutputFormat,
+  decryptBytes,
   Conversion as Decryption,
 };
 
@@ -173,9 +162,11 @@ export type {
   KeyId,
   Key,
   KeyMap,
-  IsobmffDecryptProtectedDataOptions,
-  IsobmffDecryptSampleOptions,
-  DecryptProtectedData,
+  SubsampleEncryption,
+  EncryptionPattern,
+  EncryptedBytes,
+  EncryptedSample,
+  DecryptBytesCallback,
   DecryptSample,
   MediabunnyInputOptions as InputOptions,
   StreamTargetOptions,

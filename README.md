@@ -16,7 +16,7 @@ Run `npm install -g shifro` to install the command-line tool globally.
 shifro --key eb676abbcb345e96bbcf616630f1a3da:100b6c20940f779a4589152b57d2dacb ./input.mp4 ./output.mp4
 ```
 
->You can also use `npx shifro ...` to run the CLI tool without installing it globally
+> You can also use `npx shifro ...` to run the CLI tool without installing it globally
 
 This CLI can be used as an alternative to the [mp4decrypt](https://www.bento4.com/documentation/mp4decrypt/) or [shaka-packager](https://shaka-project.github.io/shaka-packager/html/documentation.html#raw-key-encryption-options).
 
@@ -38,7 +38,7 @@ async function decrypt() {
         ['4d97930a3d7b55fa81d0028653f5e499', '429ec76475e7a952d224d8ef867f12b6'],
         ['d21373c0b8ab5ba9954742bcdfb5f48b', '150a6c7d7dee6a91b74dccfce5b31928'],
       ]),
-      // Optinally, you can use this callback to handle encryption information (like key ID and PSSH boxes)
+      // Optionally, you can use this callback to handle encryption information (like key ID and PSSH boxes)
       handleEncryptionInfo: ({ keyId, psshBoxes }) => {
         console.group(`Key ID: ${keyId}`);
         for (const psshBox of psshBoxes) {
@@ -52,6 +52,38 @@ async function decrypt() {
 
   decryption.onProgress = (progress) =>
     process.stdout.write(`\rDecrypting... [${Math.round(progress * 100)}%]`);
+
+  await decryption.execute();
+}
+```
+
+#### Decrypting file with an external AES backend
+
+```ts
+import {
+  Decryption,
+  FilePathSource,
+  FilePathTarget,
+  Input,
+  Output,
+  decryptBytes,
+  type EncryptedBytes,
+} from 'shifro';
+
+// Decrypt bytes with your DRM library
+async function decryptProtectedData({ scheme, data, iv }: EncryptedBytes) {
+  // Your decryption logic here
+}
+
+async function runDecryption() {
+  const decryption = await Decryption.init({
+    input: new Input({
+      source: new FilePathSource('./input.mp4'),
+      // `decryptBytes` - helper function that allows to handle only the encrypted bytes. Clear sample bytes are not included.
+      decryptSample: decryptBytes(decryptProtectedData),
+    }),
+    output: new Output({ target: new FilePathTarget('./output.mp4') }),
+  });
 
   await decryption.execute();
 }
