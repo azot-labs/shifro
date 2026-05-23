@@ -20,19 +20,7 @@ export type EncryptionPattern = {
   skipByteBlock: number;
 };
 
-/**
- * Options passed to {@link DecryptSample}.
- *
- * This is the advanced callback contract. `data` contains the full sample bytes exactly as they appear in the
- * container, including any clear regions. `subsamples` and `pattern` describe which parts of `data` are protected.
- *
- * Use this callback when the decryption backend needs the original sample layout, or when working with content
- * that cannot be safely represented as a single flattened protected-byte stream, such as patterned `cbcs`
- * subsample encryption.
- */
-export type EncryptedSample = {
-  /** Full sample bytes as stored in the container. Clear and protected regions are both present in this buffer. */
-  data: Uint8Array;
+export type EncryptionInfo = {
   /** Key ID from the track encryption metadata. */
   keyId: string;
   /** PSSH boxes associated with this key/sample and useful for DRM-specific key resolution. */
@@ -50,13 +38,28 @@ export type EncryptedSample = {
 };
 
 /**
+ * Options passed to {@link DecryptSample}.
+ *
+ * This is the advanced callback contract. `data` contains the full sample bytes exactly as they appear in the
+ * container, including any clear regions. `subsamples` and `pattern` describe which parts of `data` are protected.
+ *
+ * Use this callback when the decryption backend needs the original sample layout, or when working with content
+ * that cannot be safely represented as a single flattened protected-byte stream, such as patterned `cbcs`
+ * subsample encryption.
+ */
+export type EncryptedSample = EncryptionInfo & {
+  /** Full sample bytes as stored in the container. Clear and protected regions are both present in this buffer. */
+  data: Uint8Array;
+};
+
+/**
  * Options passed to {@link decryptBytes}.
  *
  * `data` contains only the bytes that still need decryption. When the helper has flattened clear or skipped regions
  * out of the original sample, `subsamples` and `pattern` are normalized to describe this callback buffer instead of
  * the original sample layout.
  */
-export type EncryptedBytes = Omit<EncryptedSample, 'data'> & {
+export type EncryptedPacket = EncryptionInfo & {
   /** Only the encrypted bytes that should be decrypted. Clear sample bytes are not included. */
   data: Uint8Array;
 };
@@ -71,7 +74,7 @@ export type EncryptedBytes = Omit<EncryptedSample, 'data'> & {
 export type DecryptSample = (options: EncryptedSample) => MaybePromise<Uint8Array>;
 
 /** Raw byte decryption callback used by {@link decryptBytes}. */
-export type DecryptBytesCallback = (options: EncryptedBytes) => MaybePromise<Uint8Array>;
+export type DecryptBytesCallback = (options: EncryptedPacket) => MaybePromise<Uint8Array>;
 
 type ByteRange = {
   offset: number;

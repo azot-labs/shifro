@@ -7,7 +7,7 @@ import { decryptBytes, Decryption, FilePathSource, FilePathTarget, Input, Output
 import type {
   EncryptionPattern,
   DecryptBytesCallback,
-  EncryptedBytes,
+  EncryptedPacket,
   EncryptedSample,
   Key,
   KeyId,
@@ -17,7 +17,7 @@ import type {
 const EXPECTED_PACKET_HASH = '485d59c0721708160acb249687ef155a61008717a0ab8a63c252c8bd8b1bc390';
 const AES_BLOCK_SIZE = 16;
 
-const decryptCtrBytes = async (options: EncryptedBytes, key: string) => {
+const decryptCtrBytes = async (options: EncryptedPacket, key: string) => {
   const decipher = createDecipheriv(
     'aes-128-ctr',
     Buffer.from(key, 'hex'),
@@ -30,16 +30,12 @@ const decryptCtrBytes = async (options: EncryptedBytes, key: string) => {
 };
 
 const encryptCtrBytes = (data: Uint8Array, key: string, iv: Uint8Array) => {
-  const cipher = createCipheriv(
-    'aes-128-ctr',
-    Buffer.from(key, 'hex'),
-    Buffer.from(iv),
-  );
+  const cipher = createCipheriv('aes-128-ctr', Buffer.from(key, 'hex'), Buffer.from(iv));
 
   return new Uint8Array(Buffer.concat([cipher.update(Buffer.from(data)), cipher.final()]));
 };
 
-const decryptCbcsBytes = async (options: EncryptedBytes, key: string) => {
+const decryptCbcsBytes = async (options: EncryptedPacket, key: string) => {
   const decipher = createDecipheriv(
     'aes-128-cbc',
     Buffer.from(key, 'hex'),
@@ -209,7 +205,7 @@ test('decrypting file with decryptBytes helper', async () => {
   const outputPath = './test/assets/bitmovin.dec.callback.mp4';
   if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
 
-  const seenOptions: EncryptedBytes[] = [];
+  const seenOptions: EncryptedPacket[] = [];
   const decryption = await Decryption.init({
     input: new Input({
       source: new FilePathSource(ASSET_DATA.inputPath),
@@ -252,7 +248,7 @@ test('decryptBytes helper decrypts cbcs subsample pattern layouts', async () => 
   const plaintext = Uint8Array.from({ length: 106 }, (_, index) => (index * 29) % 256);
   const encryptedSample = encryptCbcsSample(plaintext, key, iv, subsamples, pattern);
 
-  const seenOptions: EncryptedBytes[] = [];
+  const seenOptions: EncryptedPacket[] = [];
   const decryptSample = decryptBytes(async (options) => {
     seenOptions.push(options);
     return decryptCbcsBytes(options, key);
@@ -298,7 +294,7 @@ test('decryptBytes helper normalizes subsamples for flattened ctr inputs', async
   const plaintext = Uint8Array.from({ length: 17 }, (_, index) => (index * 13) % 256);
   const encryptedSample = encryptCtrSample(plaintext, key, iv, subsamples);
 
-  const seenOptions: EncryptedBytes[] = [];
+  const seenOptions: EncryptedPacket[] = [];
   const decryptSample = decryptBytes(async (options) => {
     seenOptions.push(options);
     return decryptCtrBytes(options, key);

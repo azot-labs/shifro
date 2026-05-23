@@ -67,11 +67,11 @@ import {
   Input,
   Output,
   decryptBytes,
-  type EncryptedBytes,
+  type EncryptedPacket,
 } from 'shifro';
 
 // Decrypt bytes with your DRM library
-async function decryptProtectedData({ scheme, data, iv }: EncryptedBytes) {
+async function decryptProtectedData({ scheme, data, iv }: EncryptedPacket) {
   // Your decryption logic here
 }
 
