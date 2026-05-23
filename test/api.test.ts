@@ -29,6 +29,16 @@ const decryptCtrBytes = async (options: EncryptedBytes, key: string) => {
   );
 };
 
+const encryptCtrBytes = (data: Uint8Array, key: string, iv: Uint8Array) => {
+  const cipher = createCipheriv(
+    'aes-128-ctr',
+    Buffer.from(key, 'hex'),
+    Buffer.from(iv),
+  );
+
+  return new Uint8Array(Buffer.concat([cipher.update(Buffer.from(data)), cipher.final()]));
+};
+
 const decryptCbcsBytes = async (options: EncryptedBytes, key: string) => {
   const decipher = createDecipheriv(
     'aes-128-cbc',
@@ -114,6 +124,41 @@ const encryptCbcsSample = (
       output.set(encrypted.subarray(readOffset, readOffset + segment.length), segment.offset);
       readOffset += segment.length;
     }
+  }
+
+  return output;
+};
+
+const encryptCtrSample = (
+  sample: Uint8Array,
+  key: string,
+  iv: Uint8Array,
+  subsamples: SubsampleEncryption[],
+) => {
+  const output = new Uint8Array(sample);
+  let totalLength = 0;
+  for (const subsample of subsamples) {
+    totalLength += subsample.protectedLen;
+  }
+
+  const encryptedInput = new Uint8Array(totalLength);
+  let cursor = 0;
+  let writeOffset = 0;
+  for (const subsample of subsamples) {
+    cursor += subsample.clearLen;
+    encryptedInput.set(sample.subarray(cursor, cursor + subsample.protectedLen), writeOffset);
+    cursor += subsample.protectedLen;
+    writeOffset += subsample.protectedLen;
+  }
+
+  const encrypted = encryptCtrBytes(encryptedInput, key, iv);
+  cursor = 0;
+  let readOffset = 0;
+  for (const subsample of subsamples) {
+    cursor += subsample.clearLen;
+    output.set(encrypted.subarray(readOffset, readOffset + subsample.protectedLen), cursor);
+    cursor += subsample.protectedLen;
+    readOffset += subsample.protectedLen;
   }
 
   return output;
@@ -228,14 +273,53 @@ test('decryptBytes helper decrypts cbcs subsample pattern layouts', async () => 
   expect(seenOptions.map((options) => options.data.byteLength)).toEqual([16, 32]);
   expect(seenOptions.every((options) => options.scheme === 'cbcs')).toBe(true);
   expect(seenOptions.map((options) => options.subsamples)).toEqual([
-    subsamples,
-    subsamples,
+    [{ clearLen: 0, protectedLen: 16 }],
+    [{ clearLen: 0, protectedLen: 32 }],
   ]);
-  expect(seenOptions.map((options) => options.pattern)).toEqual([pattern, pattern]);
+  expect(seenOptions.map((options) => options.pattern)).toEqual([
+    { cryptByteBlock: 1, skipByteBlock: 0 },
+    { cryptByteBlock: 1, skipByteBlock: 0 },
+  ]);
   expect(seenOptions.map((options) => Array.from(options.iv))).toEqual([
     Array.from(iv),
     Array.from(iv),
   ]);
+});
+
+test('decryptBytes helper normalizes subsamples for flattened ctr inputs', async () => {
+  const key = '00112233445566778899aabbccddeeff';
+  const iv = Uint8Array.from([
+    0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00,
+  ]);
+  const subsamples: SubsampleEncryption[] = [
+    { clearLen: 2, protectedLen: 5 },
+    { clearLen: 3, protectedLen: 7 },
+  ];
+  const plaintext = Uint8Array.from({ length: 17 }, (_, index) => (index * 13) % 256);
+  const encryptedSample = encryptCtrSample(plaintext, key, iv, subsamples);
+
+  const seenOptions: EncryptedBytes[] = [];
+  const decryptSample = decryptBytes(async (options) => {
+    seenOptions.push(options);
+    return decryptCtrBytes(options, key);
+  });
+
+  const decryptedSample = await decryptSample({
+    data: encryptedSample,
+    keyId: 'test-key-id',
+    psshBoxes: [],
+    scheme: 'cenc',
+    iv,
+    timestamp: 789,
+    subsamples,
+    pattern: null,
+  } satisfies EncryptedSample);
+
+  expect(decryptedSample).toEqual(plaintext);
+  expect(seenOptions).toHaveLength(1);
+  expect(seenOptions[0]?.data.byteLength).toBe(12);
+  expect(seenOptions[0]?.subsamples).toEqual([{ clearLen: 0, protectedLen: 12 }]);
+  expect(seenOptions[0]?.pattern).toBeNull();
 });
 
 test('decryptBytes helper decrypts whole-sample cbcs data and leaves trailing bytes clear', async () => {

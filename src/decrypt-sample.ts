@@ -49,7 +49,13 @@ export type EncryptedSample = {
   pattern: EncryptionPattern | null;
 };
 
-/** Options passed to {@link decryptBytes}. */
+/**
+ * Options passed to {@link decryptBytes}.
+ *
+ * `data` contains only the bytes that still need decryption. When the helper has flattened clear or skipped regions
+ * out of the original sample, `subsamples` and `pattern` are normalized to describe this callback buffer instead of
+ * the original sample layout.
+ */
 export type EncryptedBytes = Omit<EncryptedSample, 'data'> & {
   /** Only the encrypted bytes that should be decrypted. Clear sample bytes are not included. */
   data: Uint8Array;
@@ -81,28 +87,20 @@ const AES_BLOCK_SIZE = 16;
 
 const isUint8Array = (value: unknown): value is Uint8Array => value instanceof Uint8Array;
 
-const cloneSubsamples = (
+const normalizeSubsamples = (
   subsamples: SubsampleEncryption[] | null,
+  protectedLength: number,
 ): SubsampleEncryption[] | null => {
-  if (!subsamples) {
-    return null;
-  }
-
-  return subsamples.map((subsample) => ({
-    clearLen: subsample.clearLen,
-    protectedLen: subsample.protectedLen,
-  }));
+  if (!subsamples) return null;
+  return [{ clearLen: 0, protectedLen: protectedLength }];
 };
 
-const clonePattern = (pattern: EncryptionPattern | null): EncryptionPattern | null => {
-  if (!pattern) {
-    return null;
-  }
-
-  return {
-    cryptByteBlock: pattern.cryptByteBlock,
-    skipByteBlock: pattern.skipByteBlock,
-  };
+const normalizePattern = (
+  scheme: EncryptionScheme,
+  pattern: EncryptionPattern | null,
+): EncryptionPattern | null => {
+  if (!pattern || scheme !== 'cbcs') return null;
+  return { cryptByteBlock: 1, skipByteBlock: 0 };
 };
 
 const collectProtectedRanges = (
@@ -239,8 +237,8 @@ const decryptGroups = async (
       scheme: options.scheme,
       iv: group.iv.slice(),
       timestamp: options.timestamp,
-      subsamples: cloneSubsamples(options.subsamples),
-      pattern: clonePattern(options.pattern),
+      subsamples: normalizeSubsamples(options.subsamples, encryptedData.byteLength),
+      pattern: normalizePattern(options.scheme, options.pattern),
     });
 
     if (!isUint8Array(decryptedData)) {
