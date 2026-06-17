@@ -71,17 +71,17 @@
     }
   ],
   "engines": {
-    "node": ">=22.18"
+    "node": ">=22.19"
   },
   "peerDependencies": {
-    "mediabunny": "^1.45.2"
+    "mediabunny": "^1.48.0"
   },
   "devDependencies": {
-    "@types/node": "^25.8.0",
-    "oxfmt": "^0.50.0",
-    "oxlint": "^1.65.0",
-    "tsdown": "^0.22.0",
+    "@types/node": "^22.19.21",
+    "oxfmt": "^0.55.0",
+    "oxlint": "^1.70.0",
+    "tsdown": "^0.22.3",
     "typescript": "~6.0.3",
-    "vitest": "^4.1.6"
+    "vitest": "^4.1.9"
   }
 }
