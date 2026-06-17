@@ -28,9 +28,7 @@ type PatchableInputTrack = InputTrack & {
 
 type ReportEncryptionInfo = (keyId: string, psshBoxes: PsshBox[]) => void;
 
-const createMetadataOnlyOptions = (
-  options: PacketRetrievalOptions,
-): PacketRetrievalOptions => ({
+const createMetadataOnlyOptions = (options: PacketRetrievalOptions): PacketRetrievalOptions => ({
   ...options,
   metadataOnly: true,
   verifyKeyPackets: false,
@@ -66,9 +64,8 @@ export class IsobmffDecryptSamplePatcher {
 
   private patchTrackBacking(backing: IsobmffTrackBacking) {
     const packetToMetadataPacket = new WeakMap<EncodedPacket, EncodedPacket>();
-    const getOriginalPacket = (packet: EncodedPacket) => (
-      packetToMetadataPacket.get(packet) ?? packet
-    );
+    const getOriginalPacket = (packet: EncodedPacket) =>
+      packetToMetadataPacket.get(packet) ?? packet;
 
     const getFirstPacket = backing.getFirstPacket.bind(backing);
     backing.getFirstPacket = async (options) => {
@@ -77,7 +74,12 @@ export class IsobmffDecryptSamplePatcher {
       }
 
       const metadataPacket = await getFirstPacket(createMetadataOnlyOptions(options));
-      return this.materializePacket(backing, metadataPacket, () => getFirstPacket(options), packetToMetadataPacket);
+      return this.materializePacket(
+        backing,
+        metadataPacket,
+        () => getFirstPacket(options),
+        packetToMetadataPacket,
+      );
     };
 
     const getPacket = backing.getPacket.bind(backing);
@@ -87,7 +89,12 @@ export class IsobmffDecryptSamplePatcher {
       }
 
       const metadataPacket = await getPacket(timestamp, createMetadataOnlyOptions(options));
-      return this.materializePacket(backing, metadataPacket, () => getPacket(timestamp, options), packetToMetadataPacket);
+      return this.materializePacket(
+        backing,
+        metadataPacket,
+        () => getPacket(timestamp, options),
+        packetToMetadataPacket,
+      );
     };
 
     const getNextPacket = backing.getNextPacket.bind(backing);
@@ -97,7 +104,10 @@ export class IsobmffDecryptSamplePatcher {
         return getNextPacket(originalPacket, options);
       }
 
-      const metadataPacket = await getNextPacket(originalPacket, createMetadataOnlyOptions(options));
+      const metadataPacket = await getNextPacket(
+        originalPacket,
+        createMetadataOnlyOptions(options),
+      );
       return this.materializePacket(
         backing,
         metadataPacket,
@@ -128,7 +138,10 @@ export class IsobmffDecryptSamplePatcher {
         return getNextKeyPacket(originalPacket, options);
       }
 
-      const metadataPacket = await getNextKeyPacket(originalPacket, createMetadataOnlyOptions(options));
+      const metadataPacket = await getNextKeyPacket(
+        originalPacket,
+        createMetadataOnlyOptions(options),
+      );
       return this.materializePacket(
         backing,
         metadataPacket,
@@ -143,8 +156,7 @@ export class IsobmffDecryptSamplePatcher {
     options: PacketRetrievalOptions,
   ) {
     return Boolean(
-      !options.metadataOnly
-      && getTrackEncryptionInfo(backing)?.defaultIsProtected !== false,
+      !options.metadataOnly && getTrackEncryptionInfo(backing)?.defaultIsProtected !== false,
     );
   }
 
@@ -204,7 +216,9 @@ export class IsobmffDecryptSamplePatcher {
       throw new TypeError('decryption callback must return a Uint8Array.');
     }
     if (decryptedData.byteLength !== metadataPacket.byteLength) {
-      throw new Error('decryption callback must return the same number of bytes as the encrypted sample.');
+      throw new Error(
+        'decryption callback must return the same number of bytes as the encrypted sample.',
+      );
     }
 
     return new EncodedPacket(
