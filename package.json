@@ -2,6 +2,7 @@
   "name": "shifro",
   "version": "1.2.3",
   "description": "A lightweight library and command-line tool for decrypting MP4 files",
+  "packageManager": "pnpm@12.1.0",
   "files": [
     "dist"
   ],
@@ -62,7 +63,6 @@
   },
   "author": "Vitaly Gashkov <vitalygashkov@vk.com>",
   "license": "MIT",
-  "packageManager": "pnpm@11.2.0",
   "readmeFilename": "README.md",
   "funding": [
     {
