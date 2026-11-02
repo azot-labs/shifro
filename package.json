@@ -2,7 +2,7 @@
   "name": "shifro",
   "version": "1.2.4",
   "description": "A lightweight library and command-line tool for decrypting MP4 files",
-  "packageManager": "pnpm@12.1.0",
+  "packageManager": "pnpm@12.15.0",
   "files": [
     "dist"
   ],
@@ -74,7 +74,7 @@
     "node": ">=22.19"
   },
   "peerDependencies": {
-    "mediabunny": "^1.55.4"
+    "mediabunny": "^1.65.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.21",
