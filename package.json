@@ -74,7 +74,7 @@
     "node": ">=22.19"
   },
   "peerDependencies": {
-    "mediabunny": "^1.65.0"
+    "mediabunny": "^1.66.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.21",
